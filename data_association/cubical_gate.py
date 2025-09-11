@@ -1,6 +1,7 @@
 from data_association import DataAssociation
 import jax.numpy as jnp
 
+
 class CubicalGate(DataAssociation):
     def __init__(self, gate_threshold: float) -> None:
         super().__init__()

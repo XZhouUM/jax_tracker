@@ -1,6 +1,7 @@
 import abc
 import jax.numpy as jnp
 
+
 class DataAssociation(abc.ABC):
     def __init__(self) -> None:
         self.name = self.__class__.__name__

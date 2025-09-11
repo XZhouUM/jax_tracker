@@ -1,6 +1,7 @@
 from motion_models.motion_model import MotionModel
 import jax.numpy as jnp
 
+
 class ConstantVelocity(MotionModel):
     """Constant velocity model
 
@@ -48,7 +49,7 @@ class ConstantVelocity(MotionModel):
             jnp.ndarray: The Jacobian
         """
         assert self._validate_state(state)
-        
+
         dt = self.dt
         return jnp.array([
             [1, 0, dt, 0],
