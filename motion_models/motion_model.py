@@ -28,5 +28,5 @@ class MotionModel(ABC):
 
     @abstractmethod
     def jacobian(self, state: jnp.ndarray) -> jnp.ndarray:
-        """Jacobian of transition wrt state (for EKF)."""
+        """Jacobian of transition wrt state, needed for Kalman filter."""
         pass
