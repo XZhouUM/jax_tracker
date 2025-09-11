@@ -7,8 +7,8 @@ class ConstantVelocity(MotionModel):
 
     Constant velocity model for 2D motion. The state is [x, y, vx, vy].
     """
-    def __init__(self, dt: float = 1.0):
-        super().__init__(dt)
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
     def _validate_state(state: jnp.ndarray) -> bool:
@@ -24,7 +24,7 @@ class ConstantVelocity(MotionModel):
         """
         return state.shape == (4,)
     
-    def transition(self, state: jnp.ndarray) -> jnp.ndarray:
+    def transition(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Transition the state to the next time step.
 
         Args:
@@ -36,10 +36,9 @@ class ConstantVelocity(MotionModel):
         assert self._validate_state(state)
 
         x, y, vx, vy = state
-        dt = self.dt
         return jnp.array([x + vx * dt, y + vy * dt, vx, vy])
 
-    def jacobian(self, state: jnp.ndarray) -> jnp.ndarray:
+    def jacobian(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Calculate the Jacobian of the transition function.
 
         Args:
@@ -50,7 +49,6 @@ class ConstantVelocity(MotionModel):
         """
         assert self._validate_state(state)
 
-        dt = self.dt
         return jnp.array([
             [1, 0, dt, 0],
             [0, 1, 0, dt],

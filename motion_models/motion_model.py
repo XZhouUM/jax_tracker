@@ -12,21 +12,20 @@ class MotionModel(ABC):
     function.
     """
 
-    def __init__(self, dt: float):
+    def __init__(self):
         """Initialize motion model.
 
         Args:
             dt: time step
         """
-        self.dt = dt
         self.name = self.__class__.__name__
 
     @abstractmethod
-    def transition(self, state: jnp.ndarray) -> jnp.ndarray:
+    def transition(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Propagate state forward in time."""
         pass
 
     @abstractmethod
-    def jacobian(self, state: jnp.ndarray) -> jnp.ndarray:
+    def jacobian(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Jacobian of transition wrt state, needed for Kalman filter."""
         pass
