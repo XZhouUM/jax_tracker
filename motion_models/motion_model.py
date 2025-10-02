@@ -5,7 +5,7 @@ import jax.numpy as jnp
 class MotionModel(ABC):
     """Abstract base class for motion models.
 
-    For object tracking problems, the motion model is usually constructed by assuming a 
+    For object tracking problems, the motion model is usually constructed by assuming a
     constant moving state (velocity, acceleration, angular velocity, etc.) of the moving
     object at each time step. In this case, there is no extrogenous input. The key
     components for tracking are the transition function and the Jacobian of the transition

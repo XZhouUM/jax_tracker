@@ -6,6 +6,7 @@ class MeasurementModel(ABC):
     """
     Abstract base class for measurement models.
     """
+
     def __init__(self):
         self.name = self.__class__.__name__
 

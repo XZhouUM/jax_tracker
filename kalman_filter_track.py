@@ -9,18 +9,22 @@ class KalmanFilterTrackState(NamedTuple):
     P: jnp.ndarray  # covariance matrix
 
     @classmethod
-    def create(cls, x: jnp.ndarray, P: jnp.ndarray) -> 'KalmanFilterTrackState':
+    def create(cls, x: jnp.ndarray, P: jnp.ndarray) -> "KalmanFilterTrackState":
         """Create a new KalmanFilterTrackState instance with dimension check."""
         if x.shape[0] != P.shape[0] or x.shape[0] != P.shape[1]:
-            raise ValueError(f"Incompatible dimensions: x {x.shape}, P {P.shape}. "
-                             "Expected x.shape[0] == P.shape[0] == P.shape[1].")
+            raise ValueError(
+                f"Incompatible dimensions: x {x.shape}, P {P.shape}. "
+                "Expected x.shape[0] == P.shape[0] == P.shape[1]."
+            )
         return cls(x, P)
 
 
 class KalmanFilterTrack:
-    def __init__(self,
-                 initial_state: KalmanFilterTrackState,
-                 motion_model_class: Type[MotionModel]) -> None:
+    def __init__(
+        self,
+        initial_state: KalmanFilterTrackState,
+        motion_model_class: Type[MotionModel],
+    ) -> None:
         """
         Initialize the Kalman Filter Track.
 
@@ -45,7 +49,7 @@ class KalmanFilterTrack:
 
     def _measurement_update(
         self,
-        measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]]
+        measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]],
     ) -> None:
         """
         Update the state based on measurements.
@@ -78,12 +82,13 @@ class KalmanFilterTrack:
             self.state.x = self.state.x + K @ y
             self.state.P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
 
-
     def update(
         self,
         dt: float,
         Q: jnp.ndarray,
-        measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]] = None
+        measurements: Dict[
+            jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]
+        ] = None,
     ) -> None:
         """
         Perform a full Kalman Filter update: time prediction + measurement update.
