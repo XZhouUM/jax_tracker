@@ -18,7 +18,7 @@ class KalmanFilterTrackerState(NamedTuple):
         return cls(x, P)
 
 
-class KalmanFilterTracker:
+class KalmanFilterTrack:
     def __init__(self,
                  initial_state: KalmanFilterTrackerState,
                  data_association_class: Type[DataAssociation],
