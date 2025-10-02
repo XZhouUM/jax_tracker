@@ -3,7 +3,6 @@ from measurement_models.measurement_model import MeasurementModel
 
 
 def cubical_gate(
-    self,
     state: jnp.ndarray,
     measurement: jnp.ndarray,
     measurement_model: MeasurementModel,
@@ -28,10 +27,23 @@ def cubical_gate(
 
 
 def ellipsoidal_gate(
-    self,
     state: jnp.ndarray,
-    measurements: jnp.ndarray,
+    measurement: jnp.ndarray,
     measurement_model: MeasurementModel,
     gate_threshold: float,
 ) -> bool:
-    return jnp.linalg.norm(measurements - state.x) < gate_threshold
+    """
+    Ellipsoidal gate for association using Mahalanobis distance.
+
+    Args:
+        state (jnp.ndarray): The state of the track.
+        measurement (jnp.ndarray): The measurement.
+        measurement_model (MeasurementModel): The measurement model associated with the measurement.
+        gate_threshold (float): The gate threshold.
+
+    Returns:
+        bool: True if the measurement is within the ellipsoidal gate, False otherwise.
+    """
+    predicted_measurement = measurement_model.predict_measurement(state)
+    residual = measurement - predicted_measurement
+    return jnp.linalg.norm(residual) < gate_threshold
