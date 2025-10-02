@@ -5,12 +5,12 @@ from motion_models.motion_model import MotionModel
 from measurement_models.measurement_model import MeasurementModel
 
 
-class KalmanFilterTrackerState(NamedTuple):
+class KalmanFilterTrackState(NamedTuple):
     x: jnp.ndarray  # state vector
     P: jnp.ndarray  # covariance matrix
 
     @classmethod
-    def create(cls, x: jnp.ndarray, P: jnp.ndarray) -> 'KalmanFilterTrackerState':
+    def create(cls, x: jnp.ndarray, P: jnp.ndarray) -> 'KalmanFilterTrackState':
         """Create a new KalmanFilterTrackerState instance."""
         if x.shape[0] != P.shape[0] or x.shape[0] != P.shape[1]:
             raise ValueError(f"Incompatible dimensions: x {x.shape}, P {P.shape}. " 
@@ -20,7 +20,7 @@ class KalmanFilterTrackerState(NamedTuple):
 
 class KalmanFilterTrack:
     def __init__(self,
-                 initial_state: KalmanFilterTrackerState,
+                 initial_state: KalmanFilterTrackState,
                  data_association_class: Type[DataAssociation],
                  data_association_params: Dict[str, Any],
                  motion_model_class: Type[MotionModel]) -> None:
