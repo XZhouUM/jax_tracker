@@ -24,7 +24,8 @@ class ConstantVelocity(MotionModel):
         """
         return state.shape == (4,)
     
-    def transition(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
+    @staticmethod
+    def transition(state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Transition the state to the next time step.
 
         Args:
@@ -33,12 +34,13 @@ class ConstantVelocity(MotionModel):
         Returns:
             jnp.ndarray: The transitioned state
         """
-        assert self._validate_state(state)
+        assert ConstantVelocity._validate_state(state)
 
         x, y, vx, vy = state
         return jnp.array([x + vx * dt, y + vy * dt, vx, vy])
 
-    def jacobian(self, state: jnp.ndarray, dt: float) -> jnp.ndarray:
+    @staticmethod
+    def jacobian(state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Calculate the Jacobian of the transition function.
 
         Args:
@@ -47,7 +49,7 @@ class ConstantVelocity(MotionModel):
         Returns:
             jnp.ndarray: The Jacobian
         """
-        assert self._validate_state(state)
+        assert ConstantVelocity._validate_state(state)
 
         return jnp.array([
             [1, 0, dt, 0],
