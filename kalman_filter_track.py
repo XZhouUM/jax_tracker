@@ -10,9 +10,9 @@ class KalmanFilterTrackState(NamedTuple):
 
     @classmethod
     def create(cls, x: jnp.ndarray, P: jnp.ndarray) -> 'KalmanFilterTrackState':
-        """Create a new KalmanFilterTrackerState instance."""
+        """Create a new KalmanFilterTrackState instance with dimension check."""
         if x.shape[0] != P.shape[0] or x.shape[0] != P.shape[1]:
-            raise ValueError(f"Incompatible dimensions: x {x.shape}, P {P.shape}. " 
+            raise ValueError(f"Incompatible dimensions: x {x.shape}, P {P.shape}. "
                              "Expected x.shape[0] == P.shape[0] == P.shape[1].")
         return cls(x, P)
 
@@ -22,39 +22,44 @@ class KalmanFilterTrack:
                  initial_state: KalmanFilterTrackState,
                  motion_model_class: Type[MotionModel]) -> None:
         """
-        Initialize the KalmanFilterTracker.
+        Initialize the Kalman Filter Track.
 
         Args:
-            initial_state: The initial state of the tracker.
-            motion_model_class: The motion model class to use.
+            initial_state: Initial state of the tracker.
+            motion_model_class: Motion model class with static methods.
         """
-        self.motion_model = motion_model_class()
-    
+        self.motion_model_class = motion_model_class
         self.state = initial_state
-   
+
     def _time_update(self, dt: float, Q: jnp.ndarray) -> None:
         """
-        Predict the state at the next time step.
+        Predict the next state using the motion model.
 
         Args:
-            dt: The time step.
-            Q: The process noise covariance matrix.
+            dt: Time step.
+            Q: Process noise covariance matrix.
         """
-        self.state.x = self.motion_model.predict(dt)
-        self.state.P = self.motion_model.jacobian() @ self.state.P @ self.motion_model.jacobian().T + Q
+        self.state.x = self.motion_model_class.transition(self.state.x, dt)
+        F = self.motion_model_class.jacobian(self.state.x, dt)
+        self.state.P = F @ self.state.P @ F.T + Q
 
-    def _measurement_update(self,
-                            measurements: Dict[jnp.ndarray, Tuple[MeasurementModel, jnp.ndarray]]) -> None:
+    def _measurement_update(
+        self,
+        measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]]
+    ) -> None:
         """
-        Update the state based on the measurements.
+        Update the state based on measurements.
 
         The measurements can be empty. In case of empty, no measurement update is performed. Therefore,
         the track is coasting with only the motion prediction.
 
         Args:
-            measurements: A dictionary between the measurement, and its measurement
-                model and measurement noise covariance matrix.
+            measurements: Dictionary mapping measurement vectors to
+                (MeasurementModel class, measurement noise R) tuples.
         """
+        if not measurements:
+            return
+
         for measurement, (measurement_model, R) in measurements.items():
             # Predicted measurement and Jacobian
             measurement_prediction = measurement_model.predict_measurement(self.state.x)
@@ -74,14 +79,20 @@ class KalmanFilterTrack:
             self.state.P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
 
 
-    def update(self, dt: float, measurements: dict) -> None:
+    def update(
+        self,
+        dt: float,
+        Q: jnp.ndarray,
+        measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]] = None
+    ) -> None:
         """
-        Update the state of the tracker.
+        Perform a full Kalman Filter update: time prediction + measurement update.
 
         Args:
-            dt: The time step.
-            measurements: A dictionary between the measurement, and its measurement
-                model and measurement noise covariance matrix.
+            dt: Time step.
+            Q: Process noise covariance.
+            measurements: Optional dictionary of measurements to update the state.
         """
-        self._time_update(self, dt)
-        self._measurement_update(self, measurements)
+        self._time_update(dt, Q)
+        if measurements:
+            self._measurement_update(measurements)
