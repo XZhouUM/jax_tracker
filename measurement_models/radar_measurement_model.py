@@ -11,14 +11,16 @@ class RadarMeasurement(MeasurementModel):
     def __init__(self):
         super().__init__()
 
-    def predict_measurement(self, state: jnp.ndarray) -> jnp.ndarray:
+    @staticmethod
+    def predict_measurement(state: jnp.ndarray) -> jnp.ndarray:
         x, y, vx, vy = state
         range = jnp.sqrt(x**2 + y**2)
         range_rate = (x * vx + y * vy) / range
         azimuth = jnp.arctan2(y, x)
         return jnp.array([range, range_rate, azimuth])
 
-    def jacobian(self, state: jnp.ndarray) -> jnp.ndarray:
+    @staticmethod
+    def jacobian(state: jnp.ndarray) -> jnp.ndarray:
         """
         Jacobian of the measurement model.
         """

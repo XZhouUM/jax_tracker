@@ -60,7 +60,7 @@ class KalmanFilterTracker:
         self.state.P = self.motion_model.jacobian() @ self.state.P @ self.motion_model.jacobian().T + Q
 
     def _measurement_update(self,
-                            measurements: Dict[jnp.ndarray, Tuple[Type[MeasurementModel], jnp.ndarray]]) -> None:
+                            measurements: Dict[jnp.ndarray, Tuple[MeasurementModel, jnp.ndarray]]) -> None:
         """
         Update the state based on the measurements.
 
