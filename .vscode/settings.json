@@ -1,0 +1,18 @@
+{
+    // Enable format on save
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    // Black settings
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "88"
+    ],
+    // isort settings (import sorting compatible with Black)
+    "python.sortImports.args": [
+        "--profile",
+        "black"
+    ],
+    // Enable linting
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true
+}
