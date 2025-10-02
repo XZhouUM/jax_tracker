@@ -1,6 +1,5 @@
 import jax.numpy as jnp
-from typing import NamedTuple, Dict, Type, Tuple, Any
-from data_association.data_association import DataAssociation
+from typing import NamedTuple, Dict, Type, Tuple
 from motion_models.motion_model import MotionModel
 from measurement_models.measurement_model import MeasurementModel
 
@@ -21,32 +20,17 @@ class KalmanFilterTrackState(NamedTuple):
 class KalmanFilterTrack:
     def __init__(self,
                  initial_state: KalmanFilterTrackState,
-                 data_association_class: Type[DataAssociation],
-                 data_association_params: Dict[str, Any],
                  motion_model_class: Type[MotionModel]) -> None:
         """
         Initialize the KalmanFilterTracker.
 
         Args:
             initial_state: The initial state of the tracker.
-            data_association_class: The data association class to use.
-            data_association_params: The parameters for the data association class.
             motion_model_class: The motion model class to use.
         """
-        self.data_association = data_association_class(**data_association_params)
         self.motion_model = motion_model_class()
     
         self.state = initial_state
-
-    def _associate(self, state: jnp.ndarray, measurements: jnp.ndarray) -> jnp.ndarray:
-        associated_data: jnp.ndarray = None
-        for i, measurement in enumerate(measurements):
-            if self.data_association.associate(state, measurement):
-                if associated_data is None:
-                    associated_data = jnp.ndarray([measurement])
-                else:
-                    associated_data = jnp.concatenate((associated_data, [measurement]))
-        return associated_data
    
     def _time_update(self, dt: float, Q: jnp.ndarray) -> None:
         """
@@ -64,31 +48,30 @@ class KalmanFilterTrack:
         """
         Update the state based on the measurements.
 
+        The measurements can be empty. In case of empty, no measurement update is performed. Therefore,
+        the track is coasting with only the motion prediction.
+
         Args:
             measurements: A dictionary between the measurement, and its measurement
                 model and measurement noise covariance matrix.
         """
-        # associate the measurements to the track.
-        associated_data = self._associate(self, self.state.x, measurements)
+        for measurement, (measurement_model, R) in measurements.items():
+            # Predicted measurement and Jacobian
+            measurement_prediction = measurement_model.predict_measurement(self.state.x)
+            H = measurement_model.jacobian(self.state.x)
 
-        if associated_data is not None:
-            for measurement, (measurement_model, R) in associated_data:
-                # Predicted measurement and Jacobian
-                measurement_prediction = measurement_model.predict_measurement(self.state.x)
-                H = measurement_model.jacobian(self.state.x)
+            # Innovation / residual
+            y = measurement - measurement_prediction
 
-                # Innovation / residual
-                y = measurement - measurement_prediction
+            # Innovation covariance
+            S = H @ self.state.P @ H.T + R
 
-                # Innovation covariance
-                S = H @ self.state.P @ H.T + R
+            # Kalman gain
+            K = self.state.P @ H.T @ jnp.linalg.inv(S)
 
-                # Kalman gain
-                K = self.state.P @ H.T @ jnp.linalg.inv(S)
-
-                # Update state and covariance
-                self.state.x = self.state.x + K @ y
-                self.state.P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
+            # Update state and covariance
+            self.state.x = self.state.x + K @ y
+            self.state.P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
 
 
     def update(self, dt: float, measurements: dict) -> None:
