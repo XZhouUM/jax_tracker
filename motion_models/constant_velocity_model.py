@@ -7,6 +7,7 @@ class ConstantVelocity(MotionModel):
 
     Constant velocity model for 2D motion. The state is [x, y, vx, vy].
     """
+
     def __init__(self):
         super().__init__()
 
@@ -23,7 +24,7 @@ class ConstantVelocity(MotionModel):
             bool: True if the state is valid, False otherwise
         """
         return state.shape == (4,)
-    
+
     @staticmethod
     def transition(state: jnp.ndarray, dt: float) -> jnp.ndarray:
         """Transition the state to the next time step.
@@ -51,9 +52,4 @@ class ConstantVelocity(MotionModel):
         """
         assert ConstantVelocity._validate_state(state)
 
-        return jnp.array([
-            [1, 0, dt, 0],
-            [0, 1, 0, dt],
-            [0, 0, 1, 0 ],
-            [0, 0, 0, 1 ]
-        ])
+        return jnp.array([[1, 0, dt, 0], [0, 1, 0, dt], [0, 0, 1, 0], [0, 0, 0, 1]])

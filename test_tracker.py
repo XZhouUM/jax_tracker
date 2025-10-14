@@ -8,8 +8,7 @@ from typing import List
 import jax.numpy as jnp
 import jax.random
 
-from data_association.nearest_neighbor import (GlobalNearestNeighbor,
-                                               NearestNeighbor)
+from data_association.nearest_neighbor import GlobalNearestNeighbor, NearestNeighbor
 from measurement_models.radar_measurement_model import RadarMeasurement
 from measurement_preprocessing import MeasurementPreprocessor, SensorInfo
 from motion_models.constant_velocity_model import ConstantVelocity
