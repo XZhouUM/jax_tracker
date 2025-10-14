@@ -1,5 +1,6 @@
-from measurement_models.measurement_model import MeasurementModel
 import jax.numpy as jnp
+
+from measurement_models.measurement_model import MeasurementModel
 
 
 class PositionMeasurement(MeasurementModel):

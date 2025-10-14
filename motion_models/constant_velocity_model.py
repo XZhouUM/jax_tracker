@@ -1,5 +1,6 @@
-from motion_models.motion_model import MotionModel
 import jax.numpy as jnp
+
+from motion_models.motion_model import MotionModel
 
 
 class ConstantVelocity(MotionModel):
