@@ -33,7 +33,7 @@ while read local_ref local_sha remote_ref remote_sha; do
   # Run isort (imports)
   isort $CHANGED_FILES
 
-  # Run pytype (static type checking)
-  pytype $CHANGED_FILES
+  # Run mypy (type checking)
+  mypy $CHANGED_FILES
 
 done
