@@ -1,7 +1,9 @@
+from typing import Dict, List, NamedTuple, Tuple, Type
+
 import jax.numpy as jnp
-from typing import NamedTuple, Dict, Type, Tuple, List
-from motion_models.motion_model import MotionModel
+
 from measurement_models.measurement_model import MeasurementModel
+from motion_models.motion_model import MotionModel
 
 
 class KalmanFilterTrackState(NamedTuple):
@@ -85,7 +87,9 @@ class KalmanFilterTrack:
         self,
         dt: float,
         Q: jnp.ndarray,
-        measurements: List[Tuple[jnp.ndarray, Type[MeasurementModel], jnp.ndarray]] = None,
+        measurements: List[
+            Tuple[jnp.ndarray, Type[MeasurementModel], jnp.ndarray]
+        ] = None,
     ) -> None:
         """
         Perform a full Kalman Filter update: time prediction + measurement update.

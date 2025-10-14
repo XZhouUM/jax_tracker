@@ -1,12 +1,13 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple, Type
-
 import jax.numpy as jnp
+from typing import List, Dict, Tuple, Type, Optional, Any
+import time
+from dataclasses import dataclass
 
-from data_association.nearest_neighbor import (GlobalNearestNeighbor,
-                                               NearestNeighbor)
-from measurement_models.measurement_model import MeasurementModel
+from kalman_filter_track import KalmanFilterTrack
 from motion_models.motion_model import MotionModel
+from measurement_models.measurement_model import MeasurementModel
+from data_association.data_association import DataAssociation
+from data_association.nearest_neighbor import NearestNeighbor, GlobalNearestNeighbor
 from track_management import TrackManager
 
 
@@ -186,12 +187,12 @@ class MultiTrackTracker:
             if track_id in self.track_manager.tracks:
                 measurement, measurement_model, R = measurements[meas_idx]
 
-                # Create measurement list for the track update
-                measurement_list = [(measurement, measurement_model, R)]
+                # Create measurement dictionary for the track update
+                measurement_dict = {measurement: (measurement_model, R)}
 
                 # Perform measurement update (time update was already done in _predict_tracks)
                 track = self.track_manager.tracks[track_id]
-                track._measurement_update(measurement_list)
+                track._measurement_update(measurement_dict)
 
     def _initialize_new_tracks(
         self,
@@ -232,11 +233,6 @@ class MultiTrackTracker:
         For constant velocity model in 2D: Q is 4x4 matrix
         """
         # Simple process noise model for constant velocity
-        # Q = [[dt^4/4, 0, dt^3/2, 0],
-        #      [0, dt^4/4, 0, dt^3/2],
-        #      [dt^3/2, 0, dt^2, 0],
-        #      [0, dt^3/2, 0, dt^2]] * process_noise_scale
-
         dt2 = dt * dt
         dt3 = dt2 * dt
         dt4 = dt3 * dt
@@ -256,12 +252,7 @@ class MultiTrackTracker:
         return Q
 
     def get_confirmed_track_states(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Get states of all confirmed tracks.
-
-        Returns:
-            Dictionary mapping track_id to track state information
-        """
+        """Get states of all confirmed tracks."""
         confirmed_tracks = self.track_manager.get_confirmed_tracks()
         track_states = {}
 
@@ -278,12 +269,7 @@ class MultiTrackTracker:
         return track_states
 
     def get_all_track_states(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Get states of all active tracks (confirmed and tentative).
-
-        Returns:
-            Dictionary mapping track_id to track state information
-        """
+        """Get states of all active tracks (confirmed and tentative)."""
         active_tracks = self.track_manager.get_all_active_tracks()
         track_states = {}
 
@@ -300,204 +286,6 @@ class MultiTrackTracker:
             }
 
         return track_states
-
-    def predict_tracks(self, dt: float) -> Dict[int, jnp.ndarray]:
-        """
-        Predict track states forward in time without updating internal state.
-
-        Args:
-            dt: Time step for prediction
-
-        Returns:
-            Dictionary mapping track_id to predicted state
-        """
-        predictions = {}
-
-        for track_id, track in self.track_manager.get_all_active_tracks().items():
-            # Predict state without modifying the track
-            predicted_state = self.config.motion_model_class.transition(
-                track.state.x, dt
-            )
-            predictions[track_id] = predicted_state
-
-        return predictions
-
-    def reset(self) -> None:
-        """Reset the tracker to initial state."""
-        self.track_manager = TrackManager(
-            motion_model_class=self.config.motion_model_class,
-            confirmation_threshold=self.config.confirmation_threshold,
-            deletion_threshold=self.config.deletion_threshold,
-            max_tracks=self.config.max_tracks,
-        )
-        self.current_time = 0.0
-        self.last_update_time = 0.0
-
-    def get_statistics(self) -> Dict[str, Any]:
-        """Get comprehensive tracker statistics."""
-        track_summary = self.track_manager.get_track_summary()
-
-        return {
-            "current_time": self.current_time,
-            "total_tracks": track_summary["total"],
-            "confirmed_tracks": track_summary["confirmed"],
-            "tentative_tracks": track_summary["tentative"],
-            "deleted_tracks": track_summary["deleted"],
-            "next_track_id": self.track_manager.next_track_id,
-            "config": {
-                "data_association": self.config.data_association_algorithm,
-                "gate_threshold": self.config.gate_threshold,
-                "confirmation_threshold": self.config.confirmation_threshold,
-                "deletion_threshold": self.config.deletion_threshold,
-                "max_tracks": self.config.max_tracks,
-            },
-        }
-
-    def _update_tracks(
-        self,
-        measurements: List[Tuple[jnp.ndarray, Type[MeasurementModel], jnp.ndarray]],
-        associations: Dict[int, int],
-    ) -> None:
-        """Update tracks with associated measurements."""
-        for track_id, meas_idx in associations.items():
-            if track_id in self.track_manager.tracks:
-                measurement, measurement_model, R = measurements[meas_idx]
-
-                # Create measurement list for the track update
-                measurement_list = [(measurement, measurement_model, R)]
-
-                # Perform measurement update (time update was already done in _predict_tracks)
-                track = self.track_manager.tracks[track_id]
-                track._measurement_update(measurement_list)
-
-    def _initialize_new_tracks(
-        self,
-        measurements: List[Tuple[jnp.ndarray, Type[MeasurementModel], jnp.ndarray]],
-        associations: Dict[int, int],
-    ) -> List[int]:
-        """Initialize new tracks from unassociated measurements."""
-        associated_measurements = set(associations.values())
-        new_track_ids = []
-
-        for meas_idx, (measurement, measurement_model, R) in enumerate(measurements):
-            if meas_idx not in associated_measurements:
-                # Initialize new track
-                track_id = self.track_manager.initialize_track(
-                    measurement=measurement,
-                    measurement_model=measurement_model,
-                    R=R,
-                    current_time=self.current_time,
-                    initial_covariance_scale=self.config.initial_covariance_scale,
-                )
-                new_track_ids.append(track_id)
-
-        return new_track_ids
-
-    def _update_track_statuses(self, associations: Dict[int, int]) -> None:
-        """Update track statuses based on association results."""
-        # Update all active tracks
-        for track_id in self.track_manager.get_all_active_tracks().keys():
-            associated = track_id in associations
-            self.track_manager.update_track_status(
-                track_id=track_id, associated=associated, current_time=self.current_time
-            )
-
-    def _get_process_noise_matrix(self, dt: float) -> jnp.ndarray:
-        """
-        Generate process noise covariance matrix.
-
-        For constant velocity model in 2D: Q is 4x4 matrix
-        """
-        # Simple process noise model for constant velocity
-        # Q = [[dt^4/4, 0, dt^3/2, 0],
-        #      [0, dt^4/4, 0, dt^3/2],
-        #      [dt^3/2, 0, dt^2, 0],
-        #      [0, dt^3/2, 0, dt^2]] * process_noise_scale
-
-        dt2 = dt * dt
-        dt3 = dt2 * dt
-        dt4 = dt3 * dt
-
-        Q = (
-            jnp.array(
-                [
-                    [dt4 / 4, 0, dt3 / 2, 0],
-                    [0, dt4 / 4, 0, dt3 / 2],
-                    [dt3 / 2, 0, dt2, 0],
-                    [0, dt3 / 2, 0, dt2],
-                ]
-            )
-            * self.config.process_noise_scale
-        )
-
-        return Q
-
-    def get_confirmed_track_states(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Get states of all confirmed tracks.
-
-        Returns:
-            Dictionary mapping track_id to track state information
-        """
-        confirmed_tracks = self.track_manager.get_confirmed_tracks()
-        track_states = {}
-
-        for track_id, track in confirmed_tracks.items():
-            info = self.track_manager.track_info[track_id]
-            track_states[track_id] = {
-                "state": track.state.x,
-                "covariance": track.state.P,
-                "age": info.age,
-                "hits": info.hits,
-                "last_update_time": info.last_update_time,
-            }
-
-        return track_states
-
-    def get_all_track_states(self) -> Dict[int, Dict[str, Any]]:
-        """
-        Get states of all active tracks (confirmed and tentative).
-
-        Returns:
-            Dictionary mapping track_id to track state information
-        """
-        active_tracks = self.track_manager.get_all_active_tracks()
-        track_states = {}
-
-        for track_id, track in active_tracks.items():
-            info = self.track_manager.track_info[track_id]
-            track_states[track_id] = {
-                "state": track.state.x,
-                "covariance": track.state.P,
-                "age": info.age,
-                "hits": info.hits,
-                "misses": info.misses,
-                "is_confirmed": info.is_confirmed,
-                "last_update_time": info.last_update_time,
-            }
-
-        return track_states
-
-    def predict_tracks(self, dt: float) -> Dict[int, jnp.ndarray]:
-        """
-        Predict track states forward in time without updating internal state.
-
-        Args:
-            dt: Time step for prediction
-
-        Returns:
-            Dictionary mapping track_id to predicted state
-        """
-        predictions = {}
-
-        for track_id, track in self.track_manager.get_all_active_tracks().items():
-            # Predict state without modifying the track
-            predicted_state = self.config.motion_model_class.transition(
-                track.state.x, dt
-            )
-            predictions[track_id] = predicted_state
-
-        return predictions
 
     def reset(self) -> None:
         """Reset the tracker to initial state."""

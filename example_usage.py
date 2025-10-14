@@ -8,20 +8,18 @@ This script demonstrates how to:
 3. Run the tracker and visualize results
 """
 
+from typing import Any, Dict, List
+
 import jax.numpy as jnp
 import jax.random
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import List, Dict, Any
 
-from multi_track_tracker import MultiTrackTracker, TrackerConfig
-from motion_models.constant_velocity_model import ConstantVelocity
 from measurement_models.radar_measurement_model import RadarMeasurement
-from measurement_preprocessing import (
-    MeasurementPreprocessor,
-    MeasurementSimulator,
-    SensorInfo,
-)
+from measurement_preprocessing import (MeasurementPreprocessor,
+                                       MeasurementSimulator, SensorInfo)
+from motion_models.constant_velocity_model import ConstantVelocity
+from multi_track_tracker import MultiTrackTracker, TrackerConfig
 
 
 def create_example_sensors() -> Dict[str, SensorInfo]:
