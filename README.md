@@ -1,14 +1,14 @@
 # Multi-Track Tracker in JAX
 
-A comprehensive multi-target tracking system implemented in JAX, featuring Kalman filter-based tracking with configurable data association algorithms.
+A comprehensive multi-target tracking system implemented in JAX, featuring Kalman filter-based tracking with configurable data association algorithms, motion models, and measurement models.
 
 ## Features
 
 - **Multi-target tracking**: Simultaneously track multiple objects
-- **Kalman filter-based**: Uses Extended Kalman Filter for state estimation
-- **Configurable data association**: Support for Nearest Neighbor and Global Nearest Neighbor algorithms
+- **Kalman filter-based**: Uses Kalman Filter and its extension for state estimation
+- **Configurable data association**: Support several data association algorithms
 - **Track management**: Automatic track initialization, confirmation, and deletion
-- **Multiple sensor support**: Handle measurements from different sensor types (radar, position, etc.)
+- **Multiple sensor support**: Handle measurements from different sensor types (radar, position, etc.) using different measurement models
 - **JAX-powered**: Leverages JAX for efficient numerical computations and potential GPU acceleration
 
 ## Architecture
@@ -136,32 +136,3 @@ The tracker automatically handles:
 - Consider using `jax.jit` for production deployments
 - GPU acceleration available through JAX (requires appropriate JAX installation)
 - Memory usage scales with number of active tracks and measurements
-
-## Dependencies
-
-- JAX >= 0.4.38
-- NumPy >= 2.3.3
-- SciPy >= 1.16.2 (for advanced assignment algorithms)
-- Matplotlib (optional, for visualization)
-
-## Future Enhancements
-
-- Multiple Hypothesis Tracking (MHT)
-- Particle filter-based tracking
-- 3D motion models
-- Advanced sensor fusion
-- Real-time performance optimizations
-- Integration with ROS/ROS2
-
-## Contributing
-
-This is a learning project focused on JAX implementation. Contributions welcome for:
-- Additional motion models
-- New measurement models
-- Advanced data association algorithms
-- Performance optimizations
-- Documentation improvements
-
-## License
-
-Apache License 2.0 - See LICENSE file for details.
