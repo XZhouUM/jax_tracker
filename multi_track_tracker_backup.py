@@ -1,13 +1,15 @@
-import jax.numpy as jnp
-from typing import List, Dict, Tuple, Type, Optional, Any
 import time
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Type
 
-from kalman_filter_track import KalmanFilterTrack
-from motion_models.motion_model import MotionModel
-from measurement_models.measurement_model import MeasurementModel
+import jax.numpy as jnp
+
 from data_association.data_association import DataAssociation
-from data_association.nearest_neighbor import NearestNeighbor, GlobalNearestNeighbor
+from data_association.nearest_neighbor import (GlobalNearestNeighbor,
+                                               NearestNeighbor)
+from kalman_filter_track import KalmanFilterTrack
+from measurement_models.measurement_model import MeasurementModel
+from motion_models.motion_model import MotionModel
 from track_management import TrackManager
 
 

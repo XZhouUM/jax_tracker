@@ -16,11 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from measurement_models.radar_measurement_model import RadarMeasurement
-from measurement_preprocessing import (
-    MeasurementPreprocessor,
-    MeasurementSimulator,
-    SensorInfo,
-)
+from measurement_preprocessing import (MeasurementPreprocessor,
+                                       MeasurementSimulator, SensorInfo)
 from motion_models.constant_velocity_model import ConstantVelocity
 from multi_track_tracker import MultiTrackTracker, TrackerConfig
 

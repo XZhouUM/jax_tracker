@@ -125,8 +125,7 @@ class TrackManager:
             info.misses = 0  # Reset miss counter
 
             # Check for confirmation
-            if (not info.is_confirmed and
-                    info.hits >= self.confirmation_threshold):
+            if not info.is_confirmed and info.hits >= self.confirmation_threshold:
                 info.is_confirmed = True
         else:
             info.misses += 1
@@ -160,8 +159,7 @@ class TrackManager:
             List of deleted track IDs
         """
         deleted_ids = [
-            track_id for track_id, info in self.track_info.items()
-            if info.is_deleted
+            track_id for track_id, info in self.track_info.items() if info.is_deleted
         ]
 
         for track_id in deleted_ids:
@@ -187,9 +185,7 @@ class TrackManager:
         else:
             tracks = self.get_all_active_tracks()
 
-        return [
-            (track_id, track.state.x) for track_id, track in tracks.items()
-        ]
+        return [(track_id, track.state.x) for track_id, track in tracks.items()]
 
     def _initialize_state_from_measurement(
         self,
@@ -209,8 +205,7 @@ class TrackManager:
         if measurement.shape[0] == 2:  # Position measurement
             initial_x = jnp.array([measurement[0], measurement[1], 0.0, 0.0])
             initial_P = (
-                jnp.diag(jnp.array([R[0, 0], R[1, 1], 100.0, 100.0])) *
-                covariance_scale
+                jnp.diag(jnp.array([R[0, 0], R[1, 1], 100.0, 100.0])) * covariance_scale
             )
         elif measurement.shape[0] == 3:  # Range, range-rate, azimuth (radar)
             # Convert polar to Cartesian
@@ -241,9 +236,7 @@ class TrackManager:
 
         if unconfirmed_tracks:
             # Find oldest unconfirmed track
-            oldest_id = min(
-                unconfirmed_tracks, key=lambda x: x[1].created_time
-            )[0]
+            oldest_id = min(unconfirmed_tracks, key=lambda x: x[1].created_time)[0]
             self.track_info[oldest_id].is_deleted = True
 
     def get_track_summary(self) -> Dict[str, int]:
@@ -259,9 +252,7 @@ class TrackManager:
             for info in self.track_info.values()
             if not info.is_confirmed and not info.is_deleted
         )
-        deleted = sum(
-            1 for info in self.track_info.values() if info.is_deleted
-        )
+        deleted = sum(1 for info in self.track_info.values() if info.is_deleted)
 
         return {
             "total": total,

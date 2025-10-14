@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 import jax.numpy as jnp
 
-from data_association.nearest_neighbor import GlobalNearestNeighbor, NearestNeighbor
+from data_association.nearest_neighbor import (GlobalNearestNeighbor,
+                                               NearestNeighbor)
 from measurement_models.measurement_model import MeasurementModel
 from motion_models.motion_model import MotionModel
 from track_management import TrackManager
@@ -337,18 +338,17 @@ class MultiTrackTracker:
         track_summary = self.track_manager.get_track_summary()
 
         return {
-            'current_time': self.current_time,
-            'total_tracks': track_summary['total'],
-            'confirmed_tracks': track_summary['confirmed'],
-            'tentative_tracks': track_summary['tentative'],
-            'deleted_tracks': track_summary['deleted'],
-            'next_track_id': self.track_manager.next_track_id,
-            'config': {
-                'data_association': self.config.data_association_algorithm,
-                'gate_threshold': self.config.gate_threshold,
-                'confirmation_threshold': self.config.confirmation_threshold,
-                'deletion_threshold': self.config.deletion_threshold,
-                'max_tracks': self.config.max_tracks
-            }
+            "current_time": self.current_time,
+            "total_tracks": track_summary["total"],
+            "confirmed_tracks": track_summary["confirmed"],
+            "tentative_tracks": track_summary["tentative"],
+            "deleted_tracks": track_summary["deleted"],
+            "next_track_id": self.track_manager.next_track_id,
+            "config": {
+                "data_association": self.config.data_association_algorithm,
+                "gate_threshold": self.config.gate_threshold,
+                "confirmation_threshold": self.config.confirmation_threshold,
+                "deletion_threshold": self.config.deletion_threshold,
+                "max_tracks": self.config.max_tracks,
+            },
         }
-

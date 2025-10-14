@@ -5,9 +5,8 @@ Basic tests for the multi-track tracker.
 
 import jax.numpy as jnp
 
-from data_association.nearest_neighbor import (
-    GlobalNearestNeighbor, NearestNeighbor
-)
+from data_association.nearest_neighbor import (GlobalNearestNeighbor,
+                                               NearestNeighbor)
 from measurement_models.radar_measurement_model import RadarMeasurement
 from measurement_preprocessing import MeasurementPreprocessor, SensorInfo
 from motion_models.constant_velocity_model import ConstantVelocity
