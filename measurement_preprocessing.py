@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 import jax.numpy as jnp
 
 from measurement_models.measurement_model import MeasurementModel
-from measurement_models.radar_measurement_model import RadarMeasurement
 
 
 @dataclass

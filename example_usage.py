@@ -8,11 +8,10 @@ This script demonstrates how to:
 3. Run the tracker and visualize results
 """
 
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import jax.numpy as jnp
 import jax.random
-import matplotlib.pyplot as plt
 import numpy as np
 
 from measurement_models.radar_measurement_model import RadarMeasurement
@@ -192,7 +191,7 @@ def plot_tracking_results(
             plt.plot(positions[-1, 0], positions[-1, 1], "s", markersize=8)  # End
 
         # Plot track estimates
-        final_tracks = tracker.get_all_track_states()
+        tracker.get_all_track_states()
         track_histories = {}
 
         # Collect track histories
