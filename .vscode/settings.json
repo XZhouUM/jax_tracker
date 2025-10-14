@@ -27,7 +27,7 @@
         }
     },
     "black-formatter.args": [
-        "--line-length=79",
+        "--line-length=88",
         "--target-version=py39"
     ],
     "python.analysis.autoImportCompletions": true,

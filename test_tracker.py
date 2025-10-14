@@ -3,17 +3,15 @@
 Basic tests for the multi-track tracker.
 """
 
-from typing import List
-
 import jax.numpy as jnp
-import jax.random
 
-from data_association.nearest_neighbor import GlobalNearestNeighbor, NearestNeighbor
+from data_association.nearest_neighbor import (
+    GlobalNearestNeighbor, NearestNeighbor
+)
 from measurement_models.radar_measurement_model import RadarMeasurement
 from measurement_preprocessing import MeasurementPreprocessor, SensorInfo
 from motion_models.constant_velocity_model import ConstantVelocity
 from multi_track_tracker import MultiTrackTracker, TrackerConfig
-from track_management import TrackManager
 
 
 def test_tracker_initialization():
@@ -72,7 +70,7 @@ def test_track_confirmation():
         measurement = jnp.array([range_val, 5.0, 0.5])
         measurements = [(measurement, RadarMeasurement, jnp.eye(3))]
 
-        result = tracker.update(measurements, dt=1.0)
+        tracker.update(measurements, dt=1.0)
 
     # Should have one confirmed track
     stats = tracker.get_statistics()
@@ -174,7 +172,7 @@ def test_multi_target_scenario():
             ),
         ]
 
-        result = tracker.update(measurements, dt=1.0)
+        tracker.update(measurements, dt=1.0)
 
     # Should have two confirmed tracks
     stats = tracker.get_statistics()

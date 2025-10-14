@@ -45,9 +45,10 @@ class KalmanFilterTrack:
             dt: Time step.
             Q: Process noise covariance matrix.
         """
-        self.state.x = self.motion_model_class.transition(self.state.x, dt)
+        new_x = self.motion_model_class.transition(self.state.x, dt)
         F = self.motion_model_class.jacobian(self.state.x, dt)
-        self.state.P = F @ self.state.P @ F.T + Q
+        new_P = F @ self.state.P @ F.T + Q
+        self.state = self.state._replace(x=new_x, P=new_P)
 
     def _measurement_update(
         self,
@@ -80,8 +81,9 @@ class KalmanFilterTrack:
             K = self.state.P @ H.T @ jnp.linalg.inv(S)
 
             # Update state and covariance
-            self.state.x = self.state.x + K @ y
-            self.state.P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
+            new_x = self.state.x + K @ y
+            new_P = (jnp.eye(self.state.P.shape[0]) - K @ H) @ self.state.P
+            self.state = self.state._replace(x=new_x, P=new_P)
 
     def update(
         self,
