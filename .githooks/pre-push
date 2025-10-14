@@ -33,6 +33,9 @@ while read local_ref local_sha remote_ref remote_sha; do
   # Run isort (imports)
   isort $CHANGED_FILES
 
+  # Fix linter problems
+  autoflake --in-place --remove-unused-variables --remove-all-unused-imports $CHANGED_FILES
+
   # Run Flake8 (linting)
   flake8 $CHANGED_FILES --max-line-length=88
 
