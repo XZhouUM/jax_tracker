@@ -35,6 +35,7 @@ jax_tracker/
 ├── data_association/
 │   ├── data_association.py         # Abstract base class
 │   ├── nearest_neighbor.py         # NN and GNN algorithms
+│   ├── multi_hypothesis_tracking.py # MHT algorithm
 │   └── association_gate.py         # Gating functions
 ├── motion_models/
 │   ├── motion_model.py             # Abstract base class
@@ -58,7 +59,7 @@ from measurement_models.radar_measurement_model import RadarMeasurement
 # Configure tracker
 config = TrackerConfig(
     motion_model_class=ConstantVelocity,
-    data_association_algorithm="nearest_neighbor",
+    data_association_algorithm="mht",  # "nearest_neighbor", "global_nearest_neighbor", or "mht"
     gate_threshold=10.0,
     confirmation_threshold=3,
     deletion_threshold=5
@@ -136,3 +137,68 @@ The tracker automatically handles:
 - Consider using `jax.jit` for production deployments
 - GPU acceleration available through JAX (requires appropriate JAX installation)
 - Memory usage scales with number of active tracks and measurements
+
+## Data Association Algorithms
+
+The tracker supports three data association algorithms:
+
+### 1. Nearest Neighbor (NN)
+- **Algorithm**: Greedy local assignment of measurements to tracks
+- **Pros**: Fast, simple, low computational cost
+- **Cons**: Suboptimal in dense target environments
+- **Use case**: Real-time applications with well-separated targets
+
+### 2. Global Nearest Neighbor (GNN)
+- **Algorithm**: Optimal global assignment using Hungarian algorithm
+- **Pros**: Globally optimal assignment for current scan
+- **Cons**: No memory of past associations
+- **Use case**: Moderate target density with good detection probability
+
+### 3. Multi-Hypothesis Tracking (MHT)
+- **Algorithm**: Maintains multiple hypotheses about track-measurement associations
+- **Pros**: Handles ambiguous scenarios, false alarms, and missed detections
+- **Cons**: Higher computational cost, memory requirements
+- **Use case**: Cluttered environments with false alarms and crossing targets
+
+### MHT Configuration
+
+```python
+config = TrackerConfig(
+    motion_model_class=ConstantVelocity,
+    data_association_algorithm="mht",
+    gate_threshold=5.0,
+    confirmation_threshold=3,
+    deletion_threshold=5
+)
+
+tracker = MultiTrackTracker(config)
+
+# MHT-specific parameters can be accessed via the data associator
+mht = tracker.data_associator
+print(f"Active hypotheses: {mht.get_hypothesis_count()}")
+best_hypothesis = mht.get_best_hypothesis()
+```
+
+### MHT Key Features
+
+- **Hypothesis Management**: Maintains multiple possible explanations for observations
+- **Deferred Decision Making**: Delays hard decisions until more information is available
+- **False Alarm Handling**: Explicitly models and accounts for false alarm measurements
+- **Track Initialization**: Handles ambiguous track birth scenarios
+- **Pruning**: Automatically removes unlikely hypotheses to maintain computational tractability
+
+## Examples
+
+Run the provided examples to see the tracker in action:
+
+```bash
+# Basic tracker example
+python example_usage.py
+
+# MHT demonstration and algorithm comparison
+python example_mht.py
+
+# Run tests
+python test_tracker.py
+python test_mht.py
+```
