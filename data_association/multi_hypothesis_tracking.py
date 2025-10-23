@@ -1,11 +1,11 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple, Type
 import itertools
 import math
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 import jax.numpy as jnp
 
-from data_association.association_gate import ellipsoidal_gate, cubical_gate
+from data_association.association_gate import cubical_gate, ellipsoidal_gate
 from data_association.data_association import DataAssociation
 from measurement_models.measurement_model import MeasurementModel
 
@@ -14,34 +14,37 @@ from measurement_models.measurement_model import MeasurementModel
 class Hypothesis:
     """
     Represents a single hypothesis in MHT.
-    
+
     A hypothesis is a specific assignment of measurements to tracks,
     including the possibility of new tracks and false alarms.
     """
-    track_assignments: Dict[int, Optional[int]]  # track_id -> measurement_id (None = no detection)
+
+    track_assignments: Dict[
+        int, Optional[int]
+    ]  # track_id -> measurement_id (None = no detection)
     new_tracks: List[int]  # measurement_ids that start new tracks
     false_alarms: Set[int]  # measurement_ids that are false alarms
     log_likelihood: float  # Log-likelihood of this hypothesis
-    parent_hypothesis: Optional['Hypothesis'] = None
-    
+    parent_hypothesis: Optional["Hypothesis"] = None
+
     def __post_init__(self):
         """Validate hypothesis consistency."""
         # Check that each measurement is assigned to at most one category
         all_measurements = set()
-        
+
         # Add assigned measurements
         for meas_id in self.track_assignments.values():
             if meas_id is not None:
                 if meas_id in all_measurements:
                     raise ValueError(f"Measurement {meas_id} assigned multiple times")
                 all_measurements.add(meas_id)
-        
+
         # Add new track measurements
         for meas_id in self.new_tracks:
             if meas_id in all_measurements:
                 raise ValueError(f"Measurement {meas_id} assigned multiple times")
             all_measurements.add(meas_id)
-        
+
         # Add false alarm measurements
         for meas_id in self.false_alarms:
             if meas_id in all_measurements:
@@ -52,12 +55,12 @@ class Hypothesis:
 class MultiHypothesisTracking(DataAssociation):
     """
     Multi-Hypothesis Tracking (MHT) data association algorithm.
-    
+
     MHT maintains multiple hypotheses about track-measurement associations
     and prunes unlikely hypotheses over time. This allows for more robust
     tracking in cluttered environments with false alarms and missed detections.
     """
-    
+
     def __init__(
         self,
         gate_threshold: float = 5.0,
@@ -71,7 +74,7 @@ class MultiHypothesisTracking(DataAssociation):
     ):
         """
         Initialize Multi-Hypothesis Tracking.
-        
+
         Args:
             gate_threshold: Threshold for gating measurements
             use_ellipsoidal_gate: Whether to use ellipsoidal or cubical gating
@@ -91,11 +94,11 @@ class MultiHypothesisTracking(DataAssociation):
         self.prob_false_alarm = prob_false_alarm
         self.new_track_threshold = new_track_threshold
         self.n_scan_pruning = n_scan_pruning
-        
+
         # Maintain hypothesis tree
         self.hypotheses: List[Hypothesis] = []
         self.scan_count = 0
-    
+
     def associate(
         self,
         track_states: List[jnp.ndarray],
@@ -103,45 +106,42 @@ class MultiHypothesisTracking(DataAssociation):
     ) -> Dict[int, int]:
         """
         Associate measurements to tracks using MHT.
-        
+
         Args:
             track_states: List of track state vectors
             measurements: List of (measurement, measurement_model, noise_covariance) tuples
-        
+
         Returns:
             Dictionary mapping track_index -> measurement_index (best hypothesis)
         """
         if not track_states and not measurements:
             return {}
-        
+
         self.scan_count += 1
-        
+
         # Initialize hypotheses if empty
         if not self.hypotheses:
             self._initialize_hypotheses()
-        
+
         # Generate new hypotheses for current scan
         new_hypotheses = self._generate_hypotheses(track_states, measurements)
-        
+
         # Update hypothesis list
         self.hypotheses = new_hypotheses
-        
+
         # Prune hypotheses
         self._prune_hypotheses()
-        
+
         # Return best hypothesis association
         return self._get_best_association(track_states, measurements)
-    
+
     def _initialize_hypotheses(self):
         """Initialize with empty hypothesis."""
         empty_hypothesis = Hypothesis(
-            track_assignments={},
-            new_tracks=[],
-            false_alarms=set(),
-            log_likelihood=0.0
+            track_assignments={}, new_tracks=[], false_alarms=set(), log_likelihood=0.0
         )
         self.hypotheses = [empty_hypothesis]
-    
+
     def _generate_hypotheses(
         self,
         track_states: List[jnp.ndarray],
@@ -151,37 +151,39 @@ class MultiHypothesisTracking(DataAssociation):
         if not measurements:
             # No measurements - all tracks miss detection
             return self._generate_miss_hypotheses(track_states)
-        
+
         new_hypotheses = []
-        
+
         for parent_hypothesis in self.hypotheses:
             # Generate child hypotheses from this parent
             child_hypotheses = self._generate_child_hypotheses(
                 parent_hypothesis, track_states, measurements
             )
             new_hypotheses.extend(child_hypotheses)
-        
+
         return new_hypotheses
-    
-    def _generate_miss_hypotheses(self, track_states: List[jnp.ndarray]) -> List[Hypothesis]:
+
+    def _generate_miss_hypotheses(
+        self, track_states: List[jnp.ndarray]
+    ) -> List[Hypothesis]:
         """Generate hypotheses when no measurements are available."""
         miss_hypotheses = []
-        
+
         for parent_hypothesis in self.hypotheses:
             # All tracks miss detection
             track_assignments = {i: None for i in range(len(track_states))}
-            
+
             miss_likelihood = len(track_states) * math.log(1 - self.prob_detection)
-            
+
             miss_hypothesis = Hypothesis(
                 track_assignments=track_assignments,
                 new_tracks=[],
                 false_alarms=set(),
                 log_likelihood=parent_hypothesis.log_likelihood + miss_likelihood,
-                parent_hypothesis=parent_hypothesis
+                parent_hypothesis=parent_hypothesis,
             )
             miss_hypotheses.append(miss_hypothesis)
-        
+
         return miss_hypotheses
 
     def _generate_child_hypotheses(
@@ -224,7 +226,9 @@ class MultiHypothesisTracking(DataAssociation):
         gating_matrix = jnp.zeros((n_tracks, n_measurements), dtype=bool)
 
         for track_idx, track_state in enumerate(track_states):
-            for meas_idx, (measurement, measurement_model, R) in enumerate(measurements):
+            for meas_idx, (measurement, measurement_model, R) in enumerate(
+                measurements
+            ):
                 # Apply gating
                 if self.use_ellipsoidal_gate:
                     gate_valid = ellipsoidal_gate(
@@ -280,7 +284,9 @@ class MultiHypothesisTracking(DataAssociation):
                     used_measurements.add(meas_id)
 
             # Check for conflicts (multiple tracks assigned to same measurement)
-            if len(used_measurements) != len([m for m in track_assignments.values() if m is not None]):
+            if len(used_measurements) != len(
+                [m for m in track_assignments.values() if m is not None]
+            ):
                 continue  # Skip conflicting assignments
 
             # Remaining measurements can be new tracks or false alarms
@@ -291,9 +297,9 @@ class MultiHypothesisTracking(DataAssociation):
                 false_alarms = unused_measurements - set(new_track_subset)
 
                 assignment = {
-                    'track_assignments': track_assignments,
-                    'new_tracks': list(new_track_subset),
-                    'false_alarms': false_alarms
+                    "track_assignments": track_assignments,
+                    "new_tracks": list(new_track_subset),
+                    "false_alarms": false_alarms,
                 }
                 assignments.append(assignment)
                 count += 1
@@ -323,9 +329,9 @@ class MultiHypothesisTracking(DataAssociation):
         measurements: List[Tuple[jnp.ndarray, Type[MeasurementModel], jnp.ndarray]],
     ) -> Hypothesis:
         """Create hypothesis from assignment and calculate likelihood."""
-        track_assignments = assignment['track_assignments']
-        new_tracks = assignment['new_tracks']
-        false_alarms = assignment['false_alarms']
+        track_assignments = assignment["track_assignments"]
+        new_tracks = assignment["new_tracks"]
+        false_alarms = assignment["false_alarms"]
 
         # Calculate log-likelihood
         log_likelihood = parent_hypothesis.log_likelihood
@@ -358,7 +364,7 @@ class MultiHypothesisTracking(DataAssociation):
             new_tracks=new_tracks,
             false_alarms=false_alarms,
             log_likelihood=log_likelihood,
-            parent_hypothesis=parent_hypothesis
+            parent_hypothesis=parent_hypothesis,
         )
 
     def _calculate_measurement_likelihood(
@@ -382,9 +388,7 @@ class MultiHypothesisTracking(DataAssociation):
             k = len(innovation)  # Dimension of measurement
 
             log_likelihood = -0.5 * (
-                mahalanobis_dist +
-                math.log(det_R) +
-                k * math.log(2 * math.pi)
+                mahalanobis_dist + math.log(det_R) + k * math.log(2 * math.pi)
             )
 
             return float(log_likelihood)
@@ -402,11 +406,12 @@ class MultiHypothesisTracking(DataAssociation):
         self.hypotheses.sort(key=lambda h: h.log_likelihood, reverse=True)
 
         # Keep only top hypotheses
-        self.hypotheses = self.hypotheses[:self.max_hypotheses]
+        self.hypotheses = self.hypotheses[: self.max_hypotheses]
 
         # Remove hypotheses below threshold
         self.hypotheses = [
-            h for h in self.hypotheses
+            h
+            for h in self.hypotheses
             if h.log_likelihood >= self.hypothesis_prune_threshold
         ]
 
