@@ -36,6 +36,7 @@ jax_tracker/
 │   ├── data_association.py         # Abstract base class
 │   ├── nearest_neighbor.py         # NN and GNN algorithms
 │   ├── multi_hypothesis_tracking.py # MHT algorithm
+│   ├── joint_probabilistic_data_association.py # JPDA algorithm
 │   └── association_gate.py         # Gating functions
 ├── motion_models/
 │   ├── motion_model.py             # Abstract base class
@@ -59,7 +60,7 @@ from measurement_models.radar_measurement_model import RadarMeasurement
 # Configure tracker
 config = TrackerConfig(
     motion_model_class=ConstantVelocity,
-    data_association_algorithm="mht",  # "nearest_neighbor", "global_nearest_neighbor", or "mht"
+    data_association_algorithm="jpda",  # "nearest_neighbor", "global_nearest_neighbor", "mht", or "jpda"
     gate_threshold=10.0,
     confirmation_threshold=3,
     deletion_threshold=5
@@ -140,7 +141,7 @@ The tracker automatically handles:
 
 ## Data Association Algorithms
 
-The tracker supports three data association algorithms:
+The tracker supports four data association algorithms:
 
 ### 1. Nearest Neighbor (NN)
 - **Algorithm**: Greedy local assignment of measurements to tracks
@@ -159,6 +160,12 @@ The tracker supports three data association algorithms:
 - **Pros**: Handles ambiguous scenarios, false alarms, and missed detections
 - **Cons**: Higher computational cost, memory requirements
 - **Use case**: Cluttered environments with false alarms and crossing targets
+
+### 4. Joint Probabilistic Data Association (JPDA)
+- **Algorithm**: Calculates association probabilities and updates tracks with weighted measurements
+- **Pros**: Probabilistic framework, handles uncertainty gracefully, no hard decisions
+- **Cons**: Computational complexity, assumes known number of targets
+- **Use case**: Scenarios with measurement uncertainty and moderate target density
 
 ### MHT Configuration
 
@@ -179,6 +186,26 @@ print(f"Active hypotheses: {mht.get_hypothesis_count()}")
 best_hypothesis = mht.get_best_hypothesis()
 ```
 
+### JPDA Configuration
+
+```python
+config = TrackerConfig(
+    motion_model_class=ConstantVelocity,
+    data_association_algorithm="jpda",
+    gate_threshold=5.0,
+    confirmation_threshold=3,
+    deletion_threshold=5
+)
+
+tracker = MultiTrackTracker(config)
+
+# JPDA-specific parameters can be accessed via the data associator
+jpda = tracker.data_associator
+association_probs = jpda.get_association_probabilities()
+if association_probs:
+    print(f"Association probability matrix shape: {association_probs.prob_matrix.shape}")
+```
+
 ### MHT Key Features
 
 - **Hypothesis Management**: Maintains multiple possible explanations for observations
@@ -186,6 +213,14 @@ best_hypothesis = mht.get_best_hypothesis()
 - **False Alarm Handling**: Explicitly models and accounts for false alarm measurements
 - **Track Initialization**: Handles ambiguous track birth scenarios
 - **Pruning**: Automatically removes unlikely hypotheses to maintain computational tractability
+
+### JPDA Key Features
+
+- **Probabilistic Associations**: Calculates probabilities for all possible track-measurement pairs
+- **Weighted Updates**: Updates tracks using weighted combinations of measurements
+- **Uncertainty Handling**: Gracefully handles association uncertainty without hard decisions
+- **Probability Constraints**: Ensures association probabilities sum to 1.0 for consistency
+- **Combined Innovations**: Provides weighted innovation vectors for Kalman filter updates
 
 ## Examples
 
@@ -198,7 +233,11 @@ python example_usage.py
 # MHT demonstration and algorithm comparison
 python example_mht.py
 
+# JPDA demonstration and probability analysis
+python example_jpda.py
+
 # Run tests
 python test_tracker.py
 python test_mht.py
+python test_jpda.py
 ```

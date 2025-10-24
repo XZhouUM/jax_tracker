@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from data_association.multi_hypothesis_tracking import MultiHypothesisTracking
 from data_association.nearest_neighbor import (GlobalNearestNeighbor,
                                                NearestNeighbor)
+from data_association.joint_probabilistic_data_association import JointProbabilisticDataAssociation
 from measurement_models.measurement_model import MeasurementModel
 from motion_models.motion_model import MotionModel
 from track_management import TrackManager
@@ -17,7 +18,7 @@ class TrackerConfig:
 
     motion_model_class: Type[MotionModel]
     data_association_algorithm: str = (
-        "nearest_neighbor"  # "nearest_neighbor", "global_nearest_neighbor", or "mht"
+        "nearest_neighbor"  # "nearest_neighbor", "global_nearest_neighbor", "mht", or "jpda"
     )
     gate_threshold: float = 5.0
     use_ellipsoidal_gate: bool = True
@@ -66,6 +67,11 @@ class MultiTrackTracker:
             )
         elif config.data_association_algorithm == "mht":
             self.data_associator = MultiHypothesisTracking(
+                gate_threshold=config.gate_threshold,
+                use_ellipsoidal_gate=config.use_ellipsoidal_gate,
+            )
+        elif config.data_association_algorithm == "jpda":
+            self.data_associator = JointProbabilisticDataAssociation(
                 gate_threshold=config.gate_threshold,
                 use_ellipsoidal_gate=config.use_ellipsoidal_gate,
             )
