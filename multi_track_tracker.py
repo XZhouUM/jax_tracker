@@ -3,10 +3,11 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 import jax.numpy as jnp
 
+from data_association.joint_probabilistic_data_association import \
+    JointProbabilisticDataAssociation
 from data_association.multi_hypothesis_tracking import MultiHypothesisTracking
 from data_association.nearest_neighbor import (GlobalNearestNeighbor,
                                                NearestNeighbor)
-from data_association.joint_probabilistic_data_association import JointProbabilisticDataAssociation
 from measurement_models.measurement_model import MeasurementModel
 from motion_models.motion_model import MotionModel
 from track_management import TrackManager
