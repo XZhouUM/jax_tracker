@@ -1,6 +1,8 @@
 import jax.numpy as jnp
+
+from measurement_models.bounding_box_measurement_model import \
+    BoundingBoxMeasurement
 from measurement_models.measurement_model import MeasurementModel
-from measurement_models.bounding_box_measurement_model import BoundingBoxMeasurement
 
 
 def cubical_gate(

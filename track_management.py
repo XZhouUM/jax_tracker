@@ -4,8 +4,9 @@ from typing import Dict, List, Tuple, Type
 import jax.numpy as jnp
 
 from kalman_filter_track import KalmanFilterTrack, KalmanFilterTrackState
+from measurement_models.bounding_box_measurement_model import \
+    BoundingBoxMeasurement
 from measurement_models.measurement_model import MeasurementModel
-from measurement_models.bounding_box_measurement_model import BoundingBoxMeasurement
 from motion_models.motion_model import MotionModel
 
 
@@ -205,7 +206,9 @@ class TrackManager:
         if issubclass(measurement_model, BoundingBoxMeasurement):
             # Bounding box measurement: [cx, cy, w, h]
             # State: [cx, cy, w, h, vcx, vcy, vw, vh]
-            from motion_models.bounding_box_motion_model import BoundingBoxConstantVelocity
+            from motion_models.bounding_box_motion_model import \
+                BoundingBoxConstantVelocity
+
             initial_x = BoundingBoxConstantVelocity.create_initial_state(measurement)
             initial_P = BoundingBoxConstantVelocity.create_initial_covariance()
         elif measurement.shape[0] == 2:  # Position measurement

@@ -21,7 +21,8 @@ class TrackerConfig:
 
     motion_model_class: Type[MotionModel]
     data_association_algorithm: str = (
-        "nearest_neighbor"  # "nearest_neighbor", "global_nearest_neighbor", "mht", "jpda", "iou_nearest_neighbor", or "iou_optimal"
+        # "nearest_neighbor", "global_nearest_neighbor", "mht", "jpda", "iou_nearest_neighbor", or "iou_optimal"
+        "nearest_neighbor"
     )
     gate_threshold: float = 5.0
     use_ellipsoidal_gate: bool = True
@@ -257,7 +258,7 @@ class MultiTrackTracker:
         - Bounding box constant velocity: 8x8 matrix
         """
         # Use the motion model's process noise matrix method if available
-        if hasattr(self.config.motion_model_class, 'process_noise_matrix'):
+        if hasattr(self.config.motion_model_class, "process_noise_matrix"):
             try:
                 # Try with noise_scale parameter
                 return self.config.motion_model_class.process_noise_matrix(
