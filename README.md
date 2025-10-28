@@ -111,18 +111,6 @@ The `TrackerConfig` class allows customization of tracker behavior:
 - **Format**: [x, y]
 - **Use case**: Direct Cartesian position measurements (e.g., from computer vision)
 
-## Data Association Algorithms
-
-### Nearest Neighbor (NN)
-- Assigns each measurement to the closest valid track
-- Fast and simple, suitable for sparse target environments
-- May struggle with closely spaced targets
-
-### Global Nearest Neighbor (GNN)
-- Finds globally optimal assignment using assignment problem formulation
-- Better performance with closely spaced targets
-- Higher computational cost
-
 ## Track Management
 
 The tracker automatically handles:
@@ -141,31 +129,120 @@ The tracker automatically handles:
 
 ## Data Association Algorithms
 
-The tracker supports four data association algorithms:
+The tracker supports four data association algorithms, each with distinct characteristics and trade-offs:
 
 ### 1. Nearest Neighbor (NN)
 - **Algorithm**: Greedy local assignment of measurements to tracks
-- **Pros**: Fast, simple, low computational cost
-- **Cons**: Suboptimal in dense target environments
-- **Use case**: Real-time applications with well-separated targets
+- **Decision Making**: Hard assignments based on distance
+- **Computational Complexity**: O(n*m) where n=tracks, m=measurements
+- **Memory Requirements**: Minimal
+- **Pros**:
+  - Extremely fast execution
+  - Simple implementation and debugging
+  - Low memory footprint
+  - Real-time capable
+- **Cons**:
+  - Suboptimal in dense target scenarios
+  - No global optimization
+  - Poor handling of crossing targets
+  - Susceptible to measurement noise
+- **Best Use Case**: Real-time applications with well-separated targets and low noise
 
 ### 2. Global Nearest Neighbor (GNN)
-- **Algorithm**: Optimal global assignment using Hungarian algorithm
-- **Pros**: Globally optimal assignment for current scan
-- **Cons**: No memory of past associations
-- **Use case**: Moderate target density with good detection probability
+- **Algorithm**: Optimal global assignment using Hungarian algorithm for current scan
+- **Decision Making**: Globally optimal hard assignments
+- **Computational Complexity**: O(n³) for Hungarian algorithm
+- **Memory Requirements**: Low
+- **Pros**:
+  - Globally optimal for single scan
+  - Handles crossing targets well
+  - Better than NN in dense scenarios
+  - Deterministic results
+- **Cons**:
+  - No memory of past associations
+  - Computationally expensive for large problems
+  - Still makes hard decisions
+  - No handling of false alarms
+- **Best Use Case**: Moderate number of targets with occasional crossings, when optimality matters
 
 ### 3. Multi-Hypothesis Tracking (MHT)
-- **Algorithm**: Maintains multiple hypotheses about track-measurement associations
-- **Pros**: Handles ambiguous scenarios, false alarms, and missed detections
-- **Cons**: Higher computational cost, memory requirements
-- **Use case**: Cluttered environments with false alarms and crossing targets
+- **Algorithm**: Maintains multiple hypotheses about track-measurement associations over time
+- **Decision Making**: Deferred decisions, maintains multiple possibilities
+- **Computational Complexity**: Exponential in worst case, managed by pruning
+- **Memory Requirements**: High (stores multiple hypotheses)
+- **Pros**:
+  - Handles ambiguous scenarios excellently
+  - Manages false alarms and missed detections
+  - Uses temporal information effectively
+  - Theoretically optimal with infinite resources
+  - Robust in cluttered environments
+- **Cons**:
+  - High computational cost
+  - Significant memory requirements
+  - Complex implementation
+  - Requires careful pruning strategies
+- **Best Use Case**: Cluttered environments with false alarms, crossing targets, and when accuracy is paramount
 
 ### 4. Joint Probabilistic Data Association (JPDA)
 - **Algorithm**: Calculates association probabilities and updates tracks with weighted measurements
-- **Pros**: Probabilistic framework, handles uncertainty gracefully, no hard decisions
-- **Cons**: Computational complexity, assumes known number of targets
-- **Use case**: Scenarios with measurement uncertainty and moderate target density
+- **Decision Making**: Probabilistic, no hard assignments
+- **Computational Complexity**: O(2^(n*m)) for enumeration, managed by gating
+- **Memory Requirements**: Moderate
+- **Pros**:
+  - Probabilistic framework handles uncertainty gracefully
+  - No premature hard decisions
+  - Provides uncertainty quantification
+  - Better than NN/GNN in ambiguous scenarios
+  - Single-scan processing (no hypothesis management)
+- **Cons**:
+  - Assumes known number of targets
+  - Computational complexity grows exponentially
+  - Requires parameter tuning (clutter density, detection probability)
+  - May underperform MHT in highly cluttered environments
+- **Best Use Case**: Scenarios with measurement uncertainty, moderate target density, and known target count
+
+## Algorithm Comparison Matrix
+
+| Aspect               | NN    | GNN  | MHT   | JPDA  |
+| -------------------- | ----- | ---- | ----- | ----- |
+| **Speed**            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   |
+| **Memory**           | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐     | ⭐⭐⭐   |
+| **Accuracy**         | ⭐⭐    | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
+| **Clutter Handling** | ⭐     | ⭐    | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
+| **Crossing Targets** | ⭐     | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
+| **Implementation**   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐    | ⭐⭐⭐   |
+| **Real-time**        | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   |
+| **Uncertainty**      | ⭐     | ⭐    | ⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐ |
+
+## When to Use Each Algorithm
+
+### Choose **Nearest Neighbor** when:
+- Real-time performance is critical
+- Targets are well-separated
+- Simple implementation is preferred
+- Computational resources are limited
+- Tracking quality requirements are moderate
+
+### Choose **Global Nearest Neighbor** when:
+- You need better accuracy than NN
+- Targets occasionally cross paths
+- You can afford moderate computational cost
+- Single-scan optimality is important
+- False alarms are rare
+
+### Choose **Multi-Hypothesis Tracking** when:
+- Maximum tracking accuracy is required
+- Environment has significant clutter/false alarms
+- Targets frequently cross or merge
+- Computational resources are available
+- Missing a target is costly
+
+### Choose **Joint Probabilistic Data Association** when:
+- You need uncertainty quantification
+- Target count is approximately known
+- Moderate clutter levels exist
+- You want probabilistic rather than hard decisions
+- Balance between accuracy and computational cost is needed
 
 ### MHT Configuration
 
