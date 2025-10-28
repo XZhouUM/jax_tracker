@@ -82,7 +82,7 @@ print(f"Confirmed tracks: {result['track_summary']['confirmed']}")
 
 ```bash
 # Run the main example with visualization
-python example_usage.pys
+python example_usage.py
 
 # Run MHT demonstration and algorithm comparison
 python example_mht.py
