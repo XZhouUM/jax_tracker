@@ -68,6 +68,9 @@ python example_mht.py
 
 # Joint Probabilistic Data Association demonstration and probability analysis
 python example_jpda.py
+
+# Bounding box tracking with IoU-based association
+python example_bbox_tracking.py
 ```
 
 #### Test Scripts
@@ -81,8 +84,11 @@ python test_mht.py
 # Joint Probabilistic Data Association algorithm tests (7 tests)
 python test_jpda.py
 
+# Bounding box tracking tests (6 tests)
+python test_bbox_tracking.py
+
 # Run all tests at once
-python test_tracker.py && python test_mht.py && python test_jpda.py
+python test_tracker.py && python test_mht.py && python test_jpda.py && python test_bbox_tracking.py
 ```
 
 ## Architecture
@@ -105,20 +111,25 @@ jax_tracker/
 ├── kalman_filter_track.py          # Individual track implementation
 ├── measurement_preprocessing.py     # Sensor data handling
 ├── example_usage.py                # Usage examples
+├── example_bbox_tracking.py        # Bounding box tracking examples
 ├── test_tracker.py                 # Basic tests
+├── test_bbox_tracking.py           # Bounding box tracking tests
 ├── data_association/
 │   ├── data_association.py         # Abstract base class
 │   ├── nearest_neighbor.py         # NN and GNN algorithms
 │   ├── multi_hypothesis_tracking.py # MHT algorithm
 │   ├── joint_probabilistic_data_association.py # JPDA algorithm
+│   ├── iou_association.py          # IoU-based association algorithms
 │   └── association_gate.py         # Gating functions
 ├── motion_models/
 │   ├── motion_model.py             # Abstract base class
-│   └── constant_velocity_model.py  # 2D constant velocity model
+│   ├── constant_velocity_model.py  # 2D constant velocity model
+│   └── bounding_box_motion_model.py # Bounding box constant velocity model
 └── measurement_models/
     ├── measurement_model.py        # Abstract base class
     ├── radar_measurement_model.py  # Radar measurements (range, range-rate, azimuth)
-    └── position_measurement_model.py # Direct position measurements
+    ├── position_measurement_model.py # Direct position measurements
+    └── bounding_box_measurement_model.py # Bounding box measurements
 ```
 
 ## Configuration
@@ -146,6 +157,11 @@ The `TrackerConfig` class allows customization of tracker behavior:
 - **Format**: [x, y]
 - **Use case**: Direct Cartesian position measurements (e.g., from computer vision)
 
+#### Bounding Box Measurements
+- **Format**: [cx, cy, w, h] (center coordinates, width, height)
+- **Use case**: Object detection tracking with bounding boxes from computer vision systems
+- **State**: [cx, cy, w, h, vcx, vcy, vw, vh] (includes velocities for center and size)
+
 ### Track Management
 
 The tracker automatically handles:
@@ -164,7 +180,7 @@ The tracker automatically handles:
 
 ## Data Association Algorithms
 
-The tracker supports four data association algorithms, each with distinct characteristics and trade-offs:
+The tracker supports six data association algorithms, each with distinct characteristics and trade-offs:
 
 ### Algorithm Overview
 
@@ -238,18 +254,51 @@ The tracker supports four data association algorithms, each with distinct charac
   - May underperform MHT in highly cluttered environments
 - **Best Use Case**: Scenarios with measurement uncertainty, moderate target density, and known target count
 
+#### 5. IoU Nearest Neighbor
+- **Algorithm**: Greedy assignment based on Intersection over Union (IoU) for bounding boxes
+- **Decision Making**: Hard assignments based on IoU similarity
+- **Computational Complexity**: O(n*m) where n=tracks, m=measurements
+- **Memory Requirements**: Minimal
+- **Pros**:
+  - Specifically designed for bounding box tracking
+  - Fast execution with IoU-based similarity
+  - Intuitive association metric for object detection
+  - Handles scale and position changes well
+- **Cons**:
+  - Only works with bounding box measurements
+  - Greedy assignment may be suboptimal
+  - No global optimization
+- **Best Use Case**: Real-time object detection tracking with bounding box measurements
+
+#### 6. IoU Optimal Assignment
+- **Algorithm**: Optimal assignment based on IoU using Hungarian algorithm
+- **Decision Making**: Globally optimal hard assignments based on IoU
+- **Computational Complexity**: O(n³) for Hungarian algorithm
+- **Memory Requirements**: Low
+- **Pros**:
+  - Globally optimal IoU-based assignment
+  - Specifically designed for bounding box tracking
+  - Better than IoU NN in dense scenarios
+  - Handles overlapping detections well
+- **Cons**:
+  - Only works with bounding box measurements
+  - More computationally expensive than IoU NN
+  - Still makes hard decisions
+- **Best Use Case**: Object detection tracking where optimal IoU assignment is important
+
 ### Algorithm Comparison Matrix
 
-| Aspect               | NN    | GNN  | MHT   | JPDA  |
-| -------------------- | ----- | ---- | ----- | ----- |
-| **Speed**            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   |
-| **Memory**           | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐     | ⭐⭐⭐   |
-| **Accuracy**         | ⭐⭐    | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
-| **Clutter Handling** | ⭐     | ⭐    | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
-| **Crossing Targets** | ⭐     | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  |
-| **Implementation**   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐    | ⭐⭐⭐   |
-| **Real-time**        | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   |
-| **Uncertainty**      | ⭐     | ⭐    | ⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐ |
+| Aspect               | NN    | GNN  | MHT   | JPDA  | IoU-NN | IoU-Opt |
+| -------------------- | ----- | ---- | ----- | ----- | ------ | ------- |
+| **Speed**            | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐     |
+| **Memory**           | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐     | ⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐    |
+| **Accuracy**         | ⭐⭐    | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  | ⭐⭐⭐    | ⭐⭐⭐⭐    |
+| **Clutter Handling** | ⭐     | ⭐    | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  | ⭐⭐     | ⭐⭐      |
+| **Crossing Targets** | ⭐     | ⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐  | ⭐⭐⭐    | ⭐⭐⭐⭐    |
+| **Implementation**   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐    | ⭐⭐⭐   | ⭐⭐⭐⭐   | ⭐⭐⭐     |
+| **Real-time**        | ⭐⭐⭐⭐⭐ | ⭐⭐⭐  | ⭐⭐    | ⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐     |
+| **Uncertainty**      | ⭐     | ⭐    | ⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐ | ⭐      | ⭐       |
+| **Bbox Suitability** | ⭐⭐    | ⭐⭐   | ⭐⭐⭐   | ⭐⭐⭐   | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐⭐   |
 
 ### Selection Guide
 
@@ -280,6 +329,20 @@ The tracker supports four data association algorithms, each with distinct charac
 - Moderate clutter levels exist
 - You want probabilistic rather than hard decisions
 - Balance between accuracy and computational cost is needed
+
+#### Choose **IoU Nearest Neighbor** when:
+- Tracking objects with bounding box detections
+- Real-time performance is critical
+- Simple IoU-based association is sufficient
+- Working with object detection systems (YOLO, R-CNN, etc.)
+- Computational resources are limited
+
+#### Choose **IoU Optimal Assignment** when:
+- Tracking objects with bounding box detections
+- You need optimal IoU-based assignment
+- Handling dense object scenarios with overlapping detections
+- Accuracy is more important than speed
+- Working with high-quality object detection systems
 
 ### Algorithm-Specific Configuration
 
@@ -333,3 +396,32 @@ if association_probs:
 - **Uncertainty Handling**: Gracefully handles association uncertainty without hard decisions
 - **Probability Constraints**: Ensures association probabilities sum to 1.0 for consistency
 - **Combined Innovations**: Provides weighted innovation vectors for Kalman filter updates
+
+#### Bounding Box Tracking Configuration
+```python
+from motion_models.bounding_box_motion_model import BoundingBoxConstantVelocity
+from measurement_models.bounding_box_measurement_model import BoundingBoxMeasurement
+
+config = TrackerConfig(
+    motion_model_class=BoundingBoxConstantVelocity,
+    data_association_algorithm="iou_nearest_neighbor",  # or "iou_optimal"
+    gate_threshold=0.1,  # Minimum IoU threshold (0.0 to 1.0)
+    confirmation_threshold=3,
+    deletion_threshold=5
+)
+
+tracker = MultiTrackTracker(config)
+
+# Process bounding box measurements
+measurements = [
+    (jnp.array([100, 50, 40, 30]), BoundingBoxMeasurement, jnp.eye(4))  # [cx, cy, w, h]
+]
+
+result = tracker.update(measurements, dt=1.0)
+```
+
+**Bounding Box Key Features:**
+- **IoU-based Association**: Uses Intersection over Union for similarity measurement
+- **Scale-aware Tracking**: Tracks both position and size changes
+- **Object Detection Integration**: Designed for computer vision detection systems
+- **Velocity Estimation**: Estimates velocities for both center position and bounding box size

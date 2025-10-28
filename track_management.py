@@ -5,6 +5,7 @@ import jax.numpy as jnp
 
 from kalman_filter_track import KalmanFilterTrack, KalmanFilterTrackState
 from measurement_models.measurement_model import MeasurementModel
+from measurement_models.bounding_box_measurement_model import BoundingBoxMeasurement
 from motion_models.motion_model import MotionModel
 
 
@@ -200,9 +201,14 @@ class TrackManager:
         This is a simplified initialization. In practice, you might need
         more sophisticated methods depending on your measurement model.
         """
-        # For constant velocity model with position measurements
-        # Assume measurement is [x, y] and initialize velocity to zero
-        if measurement.shape[0] == 2:  # Position measurement
+        # Check measurement model type for proper initialization
+        if issubclass(measurement_model, BoundingBoxMeasurement):
+            # Bounding box measurement: [cx, cy, w, h]
+            # State: [cx, cy, w, h, vcx, vcy, vw, vh]
+            from motion_models.bounding_box_motion_model import BoundingBoxConstantVelocity
+            initial_x = BoundingBoxConstantVelocity.create_initial_state(measurement)
+            initial_P = BoundingBoxConstantVelocity.create_initial_covariance()
+        elif measurement.shape[0] == 2:  # Position measurement
             initial_x = jnp.array([measurement[0], measurement[1], 0.0, 0.0])
             initial_P = (
                 jnp.diag(jnp.array([R[0, 0], R[1, 1], 100.0, 100.0])) * covariance_scale

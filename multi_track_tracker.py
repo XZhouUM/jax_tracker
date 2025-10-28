@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 import jax.numpy as jnp
 
+from data_association.iou_association import (IoUNearestNeighbor,
+                                              IoUOptimalAssignment)
 from data_association.joint_probabilistic_data_association import \
     JointProbabilisticDataAssociation
 from data_association.multi_hypothesis_tracking import MultiHypothesisTracking
@@ -19,7 +21,7 @@ class TrackerConfig:
 
     motion_model_class: Type[MotionModel]
     data_association_algorithm: str = (
-        "nearest_neighbor"  # "nearest_neighbor", "global_nearest_neighbor", "mht", or "jpda"
+        "nearest_neighbor"  # "nearest_neighbor", "global_nearest_neighbor", "mht", "jpda", "iou_nearest_neighbor", or "iou_optimal"
     )
     gate_threshold: float = 5.0
     use_ellipsoidal_gate: bool = True
@@ -75,6 +77,14 @@ class MultiTrackTracker:
             self.data_associator = JointProbabilisticDataAssociation(
                 gate_threshold=config.gate_threshold,
                 use_ellipsoidal_gate=config.use_ellipsoidal_gate,
+            )
+        elif config.data_association_algorithm == "iou_nearest_neighbor":
+            self.data_associator = IoUNearestNeighbor(
+                min_iou_threshold=config.gate_threshold,
+            )
+        elif config.data_association_algorithm == "iou_optimal":
+            self.data_associator = IoUOptimalAssignment(
+                min_iou_threshold=config.gate_threshold,
             )
         else:
             raise ValueError(
@@ -242,14 +252,23 @@ class MultiTrackTracker:
         """
         Generate process noise covariance matrix.
 
-        For constant velocity model in 2D: Q is 4x4 matrix
+        The matrix size depends on the motion model:
+        - Constant velocity 2D: 4x4 matrix
+        - Bounding box constant velocity: 8x8 matrix
         """
-        # Simple process noise model for constant velocity
-        # Q = [[dt^4/4, 0, dt^3/2, 0],
-        #      [0, dt^4/4, 0, dt^3/2],
-        #      [dt^3/2, 0, dt^2, 0],
-        #      [0, dt^3/2, 0, dt^2]] * process_noise_scale
+        # Use the motion model's process noise matrix method if available
+        if hasattr(self.config.motion_model_class, 'process_noise_matrix'):
+            try:
+                # Try with noise_scale parameter
+                return self.config.motion_model_class.process_noise_matrix(
+                    dt, self.config.process_noise_scale
+                )
+            except TypeError:
+                # Fallback to method without noise_scale
+                Q = self.config.motion_model_class.process_noise_matrix(dt)
+                return Q * self.config.process_noise_scale
 
+        # Fallback to 2D constant velocity model
         dt2 = dt * dt
         dt3 = dt2 * dt
         dt4 = dt3 * dt
