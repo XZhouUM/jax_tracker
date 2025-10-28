@@ -463,9 +463,47 @@ class JointProbabilisticDataAssociation(DataAssociation):
             combined_innovations.append(weighted_innovation)
 
             # Calculate combined covariance (simplified approach)
+            #
+            # THEORETICAL JPDA COMBINED COVARIANCE FORMULA:
+            # S_combined = Σ(i) β_i * (R_i + ν_i * ν_i^T) - ν_combined * ν_combined^T
+            #
+            # Where:
+            # - β_i = association probability for measurement i
+            # - R_i = measurement covariance matrix for measurement i
+            # - ν_i = innovation vector for measurement i (measurement - prediction)
+            # - ν_combined = combined weighted innovation vector
+            # - ν_i * ν_i^T = outer product representing innovation spread
+            #
+            # COMPLETE IMPLEMENTATION WOULD BE:
+            # combined_cov = jnp.zeros_like(valid_measurements[0][2])
+            # for (meas, model, R, innovation), prob in zip(valid_measurements, valid_probs):
+            #     # Add weighted measurement covariance
+            #     combined_cov += prob * R
+            #     # Add weighted innovation spread (uncertainty from association)
+            #     combined_cov += prob * jnp.outer(innovation, innovation)
+            # # Subtract combined innovation spread (avoid double counting)
+            # combined_cov -= jnp.outer(weighted_innovation, weighted_innovation)
+            # combined_covariances.append(combined_cov)
+            #
+            # CURRENT SIMPLIFIED APPROACH:
+            # PROS:
+            # - Computationally fast (O(1) vs O(n*m^2) for proper approach)
+            # - Simple implementation, no complex matrix operations
+            # - Numerically stable, avoids potential matrix conditioning issues in inversion
+            # - Works reasonably well when all measurements have similar noise levels
+            # - Good approximation when one measurement clearly dominates (high β_i)
+            #
+            # CONS:
+            # - Theoretically incorrect, violates JPDA mathematical framework
+            # - Underestimates uncertainty by ignoring association ambiguity
+            # - Kalman filter receives incorrect covariance information
+            # - Poor performance with heterogeneous measurement noise levels
+            # - Suboptimal in highly ambiguous association scenarios
+            # - May lead to overconfident tracking and filter divergence
+            #
             if valid_measurements:
                 # Use the covariance of the first valid measurement as approximation
-                # In practice, this should be a more sophisticated combination
+                # This underestimates uncertainty by ignoring association ambiguity
                 combined_covariances.append(valid_measurements[0][2])
             else:
                 # No valid measurements - use identity matrix
