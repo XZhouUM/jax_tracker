@@ -82,10 +82,18 @@ print(f"Confirmed tracks: {result['track_summary']['confirmed']}")
 
 ```bash
 # Run the main example with visualization
-python example_usage.py
+python example_usage.pys
 
-# Run basic tests
-python test_tracker.py
+# Run MHT demonstration and algorithm comparison
+python example_mht.py
+
+# Run JPDA demonstration and probability analysis
+python example_jpda.py
+
+# Run all tests
+python test_tracker.py    # Basic tracker tests
+python test_mht.py        # Multi-Hypothesis Tracking tests
+python test_jpda.py       # Joint Probabilistic Data Association tests
 ```
 
 ## Configuration Options
