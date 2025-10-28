@@ -16,6 +16,14 @@ A comprehensive multi-target tracking system implemented in JAX, featuring Kalma
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/XZhouUM/jax_tracker.git
+cd jax_tracker
+
+# Run the setup script
+./post_clone.sh
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
