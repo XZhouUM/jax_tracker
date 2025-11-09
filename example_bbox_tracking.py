@@ -9,13 +9,13 @@ This example shows how to:
 4. Compare different IoU association algorithms
 """
 
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Tuple
 
 import jax.numpy as jnp
 import jax.random as random
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
 
 from measurement_models.bounding_box_measurement_model import \
     BoundingBoxMeasurement
@@ -182,7 +182,7 @@ def demonstrate_bbox_tracking_with_plots():
 
         # Extract track states for plotting
         tracks = {}
-        if hasattr(tracker.track_manager, 'tracks'):
+        if hasattr(tracker.track_manager, "tracks"):
             for track_id, track in tracker.track_manager.tracks.items():
                 # Get current state vector [cx, cy, w, h, vcx, vcy, vw, vh]
                 # track.state is a KalmanFilterTrackState with .x and .P attributes
@@ -190,9 +190,9 @@ def demonstrate_bbox_tracking_with_plots():
                 tracks[track_id] = state
 
         tracker_result = {
-            'tracks': tracks,
-            'track_summary': result['track_summary'],
-            'step': step
+            "tracks": tracks,
+            "track_summary": result["track_summary"],
+            "step": step,
         }
         tracker_history.append(tracker_result)
 
@@ -217,17 +217,19 @@ def demonstrate_bbox_tracking_with_plots():
     print(f"\nGenerating visualization plots...")
 
     # Plot overall tracking results
-    plot_tracking_results(measurements_history, tracker_history,
-                         "IoU-Based Bounding Box Tracking")
+    plot_tracking_results(
+        measurements_history, tracker_history, "IoU-Based Bounding Box Tracking"
+    )
 
     # Plot snapshots at interesting time points
     interesting_steps = [10, 30, 50, 70]
     for step in interesting_steps:
         if step < len(measurements_history):
             measurements = measurements_history[step]
-            tracks = tracker_history[step]['tracks']
-            plot_bounding_boxes_snapshot(measurements, tracks, step,
-                                       "Bounding Box Tracking Snapshot")
+            tracks = tracker_history[step]["tracks"]
+            plot_bounding_boxes_snapshot(
+                measurements, tracks, step, "Bounding Box Tracking Snapshot"
+            )
 
 
 def compare_iou_algorithms():
@@ -316,7 +318,7 @@ def demonstrate_iou_calculation():
 def plot_tracking_results(
     measurements_history: List[List[Tuple[jnp.ndarray, type, jnp.ndarray]]],
     tracker_history: List[Dict[str, Any]],
-    title: str = "Bounding Box Tracking Results"
+    title: str = "Bounding Box Tracking Results",
 ) -> None:
     """
     Plot the tracking results showing measurements and track trajectories.
@@ -339,36 +341,53 @@ def plot_tracking_results(
     for step, measurements in enumerate(measurements_history):
         for i, (meas, _, _) in enumerate(measurements):
             if i not in measurement_trajectories:
-                measurement_trajectories[i] = {'x': [], 'y': [], 'steps': []}
-            measurement_trajectories[i]['x'].append(float(meas[0]))  # cx
-            measurement_trajectories[i]['y'].append(float(meas[1]))  # cy
-            measurement_trajectories[i]['steps'].append(step)
+                measurement_trajectories[i] = {"x": [], "y": [], "steps": []}
+            measurement_trajectories[i]["x"].append(float(meas[0]))  # cx
+            measurement_trajectories[i]["y"].append(float(meas[1]))  # cy
+            measurement_trajectories[i]["steps"].append(step)
 
     # Extract track trajectories first
     track_trajectories = {}
     for step, result in enumerate(tracker_history):
-        if 'tracks' in result:
-            for track_id, track_state in result['tracks'].items():
+        if "tracks" in result:
+            for track_id, track_state in result["tracks"].items():
                 if track_id not in track_trajectories:
-                    track_trajectories[track_id] = {'x': [], 'y': [], 'steps': []}
+                    track_trajectories[track_id] = {"x": [], "y": [], "steps": []}
                 # Extract scalar values (track_state is already numpy array)
-                track_trajectories[track_id]['x'].append(float(track_state[0]))  # cx
-                track_trajectories[track_id]['y'].append(float(track_state[1]))  # cy
-                track_trajectories[track_id]['steps'].append(step)
+                track_trajectories[track_id]["x"].append(float(track_state[0]))  # cx
+                track_trajectories[track_id]["y"].append(float(track_state[1]))  # cy
+                track_trajectories[track_id]["steps"].append(step)
 
     # Plot track trajectories first (behind measurements)
-    colors = ['red', 'green', 'blue', 'orange', 'purple', 'brown']
+    colors = ["red", "green", "blue", "orange", "purple", "brown"]
     for track_id, traj in track_trajectories.items():
         color = colors[track_id % len(colors)]
-        ax1.plot(traj['x'], traj['y'], 's-', color=color, alpha=0.6,
-                label=f'Track {track_id}', markersize=3, linewidth=1.5,
-                markerfacecolor='none', markeredgewidth=1.5)
+        ax1.plot(
+            traj["x"],
+            traj["y"],
+            "s-",
+            color=color,
+            alpha=0.6,
+            label=f"Track {track_id}",
+            markersize=3,
+            linewidth=1.5,
+            markerfacecolor="none",
+            markeredgewidth=1.5,
+        )
 
     # Plot measurement trajectories on top (more visible)
     for i, traj in measurement_trajectories.items():
         color = colors[i % len(colors)]
-        ax1.plot(traj['x'], traj['y'], 'o-', color=color, alpha=0.8,
-                label=f'Measurements {i}', markersize=5, linewidth=2)
+        ax1.plot(
+            traj["x"],
+            traj["y"],
+            "o-",
+            color=color,
+            alpha=0.8,
+            label=f"Measurements {i}",
+            markersize=5,
+            linewidth=2,
+        )
 
     ax1.legend()
 
@@ -381,28 +400,45 @@ def plot_tracking_results(
     # Plot track sizes first (behind measurements)
     for track_id, traj in track_trajectories.items():
         areas = []
-        for step in traj['steps']:
+        for step in traj["steps"]:
             result = tracker_history[step]
-            if 'tracks' in result and track_id in result['tracks']:
-                track_state = result['tracks'][track_id]
+            if "tracks" in result and track_id in result["tracks"]:
+                track_state = result["tracks"][track_id]
                 # Extract scalar values (track_state is already numpy array)
                 area = float(track_state[2] * track_state[3])  # w * h
                 areas.append(area)
         color = colors[track_id % len(colors)]
-        ax2.plot(traj['steps'], areas, 's-', color=color, alpha=0.6,
-                label=f'Track {track_id}', markersize=3, linewidth=1.5,
-                markerfacecolor='none', markeredgewidth=1.5)
+        ax2.plot(
+            traj["steps"],
+            areas,
+            "s-",
+            color=color,
+            alpha=0.6,
+            label=f"Track {track_id}",
+            markersize=3,
+            linewidth=1.5,
+            markerfacecolor="none",
+            markeredgewidth=1.5,
+        )
 
     # Plot measurement sizes on top (more visible)
     for i, traj in measurement_trajectories.items():
         areas = []
-        for step in traj['steps']:
+        for step in traj["steps"]:
             meas = measurements_history[step][i][0]
             area = float(meas[2] * meas[3])  # w * h
             areas.append(area)
         color = colors[i % len(colors)]
-        ax2.plot(traj['steps'], areas, 'o-', color=color, alpha=0.8,
-                label=f'Measurements {i}', markersize=5, linewidth=2)
+        ax2.plot(
+            traj["steps"],
+            areas,
+            "o-",
+            color=color,
+            alpha=0.8,
+            label=f"Measurements {i}",
+            markersize=5,
+            linewidth=2,
+        )
 
     ax2.legend()
 
@@ -412,14 +448,14 @@ def plot_tracking_results(
     plt.show(block=False)
     plt.draw()
     plt.pause(6.0)
-    plt.close('all')
+    plt.close("all")
 
 
 def plot_bounding_boxes_snapshot(
     measurements: List[Tuple[jnp.ndarray, type, jnp.ndarray]],
     tracks: Dict[int, jnp.ndarray],
     step: int,
-    title: str = "Bounding Box Snapshot"
+    title: str = "Bounding Box Snapshot",
 ) -> None:
     """
     Plot a snapshot of bounding boxes at a specific time step.
@@ -437,40 +473,75 @@ def plot_bounding_boxes_snapshot(
     ax.grid(True, alpha=0.3)
 
     # Plot tracks first (behind measurements) as dashed rectangles
-    colors = ['blue', 'green', 'orange', 'purple', 'brown', 'pink']
+    colors = ["blue", "green", "orange", "purple", "brown", "pink"]
     for track_id, track_state in tracks.items():
         # Extract scalar values (track_state is already numpy array)
-        cx, cy, w, h = float(track_state[0]), float(track_state[1]), float(track_state[2]), float(track_state[3])
-        x1, y1 = cx - w/2, cy - h/2
+        cx, cy, w, h = (
+            float(track_state[0]),
+            float(track_state[1]),
+            float(track_state[2]),
+            float(track_state[3]),
+        )
+        x1, y1 = cx - w / 2, cy - h / 2
 
         color = colors[track_id % len(colors)]
-        rect = patches.Rectangle((x1, y1), w, h, linewidth=2,
-                               edgecolor=color, facecolor='none', linestyle='--', alpha=0.7)
+        rect = patches.Rectangle(
+            (x1, y1),
+            w,
+            h,
+            linewidth=2,
+            edgecolor=color,
+            facecolor="none",
+            linestyle="--",
+            alpha=0.7,
+        )
         ax.add_patch(rect)
-        ax.text(cx, cy - h/4, f'T{track_id}', ha='center', va='center',
-               fontweight='bold', color=color, fontsize=10)
+        ax.text(
+            cx,
+            cy - h / 4,
+            f"T{track_id}",
+            ha="center",
+            va="center",
+            fontweight="bold",
+            color=color,
+            fontsize=10,
+        )
 
     # Plot measurements on top as solid rectangles (more visible)
     for i, (meas, _, _) in enumerate(measurements):
         cx, cy, w, h = float(meas[0]), float(meas[1]), float(meas[2]), float(meas[3])
-        x1, y1 = cx - w/2, cy - h/2
+        x1, y1 = cx - w / 2, cy - h / 2
 
-        rect = patches.Rectangle((x1, y1), w, h, linewidth=3,
-                               edgecolor='red', facecolor='red', alpha=0.4)
+        rect = patches.Rectangle(
+            (x1, y1), w, h, linewidth=3, edgecolor="red", facecolor="red", alpha=0.4
+        )
         ax.add_patch(rect)
-        ax.text(cx, cy, f'M{i}', ha='center', va='center',
-               fontweight='bold', color='darkred', fontsize=12)
+        ax.text(
+            cx,
+            cy,
+            f"M{i}",
+            ha="center",
+            va="center",
+            fontweight="bold",
+            color="darkred",
+            fontsize=12,
+        )
 
     # Set axis limits
     all_boxes = []
     for meas, _, _ in measurements:
         cx, cy, w, h = float(meas[0]), float(meas[1]), float(meas[2]), float(meas[3])
-        all_boxes.extend([cx - w/2, cx + w/2, cy - h/2, cy + h/2])
+        all_boxes.extend([cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2])
 
     for track_state in tracks.values():
         # Extract scalar values (track_state is already numpy array)
-        cx, cy, w, h = float(track_state[0]), float(track_state[1]), float(track_state[2]), float(track_state[3])
-        all_boxes.extend([cx - w/2, cx + w/2, cy - h/2, cy + h/2])
+        cx, cy, w, h = (
+            float(track_state[0]),
+            float(track_state[1]),
+            float(track_state[2]),
+            float(track_state[3]),
+        )
+        all_boxes.extend([cx - w / 2, cx + w / 2, cy - h / 2, cy + h / 2])
 
     if all_boxes:
         margin = 50
@@ -478,21 +549,22 @@ def plot_bounding_boxes_snapshot(
         ax.set_ylim(min(all_boxes) - margin, max(all_boxes) + margin)
 
     # Add legend
-    red_patch = patches.Patch(color='red', alpha=0.4, label='Measurements (solid)')
-    blue_patch = patches.Patch(color='blue', alpha=0.7, label='Tracks (dashed)')
+    red_patch = patches.Patch(color="red", alpha=0.4, label="Measurements (solid)")
+    blue_patch = patches.Patch(color="blue", alpha=0.7, label="Tracks (dashed)")
     ax.legend(handles=[red_patch, blue_patch])
 
     plt.tight_layout()
 
     # Check if we can display plots or need to save them
     import matplotlib
+
     backend = matplotlib.get_backend()
 
-    if backend in ['Agg', 'svg', 'pdf', 'ps']:
+    if backend in ["Agg", "svg", "pdf", "ps"]:
         # Non-interactive backend - save plot
         filename = f"bbox_snapshot_step_{step}.png"
-        plt.savefig(filename, dpi=150, bbox_inches='tight')
-        plt.close('all')
+        plt.savefig(filename, dpi=150, bbox_inches="tight")
+        plt.close("all")
         print(f"Non-interactive backend detected, snapshot saved as {filename}")
     else:
         # Interactive backend - try to display
@@ -500,13 +572,13 @@ def plot_bounding_boxes_snapshot(
             plt.show(block=False)
             plt.draw()
             plt.pause(0.5)
-            plt.close('all')
+            plt.close("all")
             print(f"Snapshot plot for step {step} displayed successfully")
         except Exception as e:
             # Fallback: save plot if display fails
             filename = f"bbox_snapshot_step_{step}.png"
-            plt.savefig(filename, dpi=150, bbox_inches='tight')
-            plt.close('all')
+            plt.savefig(filename, dpi=150, bbox_inches="tight")
+            plt.close("all")
             print(f"Display failed, snapshot saved as {filename}")
             print(f"Exception: {e}")
 
@@ -520,13 +592,20 @@ if __name__ == "__main__":
     # Ask user if they want to see visualizations
     try:
         import matplotlib.pyplot as plt_check
-        print("\n" + "="*60)
+
+        print("\n" + "=" * 60)
         print("VISUALIZATION DEMO AVAILABLE")
-        print("="*60)
-        response = input("Would you like to see tracking visualizations? (y/n): ").lower().strip()
-        if response in ['y', 'yes']:
+        print("=" * 60)
+        response = (
+            input("Would you like to see tracking visualizations? (y/n): ")
+            .lower()
+            .strip()
+        )
+        if response in ["y", "yes"]:
             demonstrate_bbox_tracking_with_plots()
         else:
             print("Skipping visualization demo.")
     except ImportError:
-        print("\nNote: matplotlib not available. Install with 'pip install matplotlib' to see visualizations.")
+        print(
+            "\nNote: matplotlib not available. Install with 'pip install matplotlib' to see visualizations."
+        )
