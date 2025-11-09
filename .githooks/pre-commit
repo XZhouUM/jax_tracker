@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+# Pre-commit hook: Run code formatting on staged Python files
+
+# Get staged Python files (added or modified)
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=AM -- '*.py')
+
+if [ -z "$CHANGED_FILES" ]; then
+  echo "No Python files staged for commit."
+  exit 0
+fi
+
+echo "Running code checks on staged Python files:"
+echo "$CHANGED_FILES"
+
+# Run Black (formatting)
+black $CHANGED_FILES --line-length 88
+
+# Run isort (imports)
+isort $CHANGED_FILES
+
+# Add the formatted files back to staging
+git add $CHANGED_FILES
+
+echo "Code formatting complete. Files have been re-staged."
