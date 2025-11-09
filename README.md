@@ -69,9 +69,18 @@ python example_mht.py
 # Joint Probabilistic Data Association demonstration and probability analysis
 python example_jpda.py
 
-# Bounding box tracking with IoU-based association
+# Bounding box tracking with IoU-based association (includes optional visualization)
 python example_bbox_tracking.py
 ```
+
+#### Visualization Features
+
+The bounding box tracking example includes interactive visualization capabilities:
+
+- **Trajectory Plots**: Shows object center positions and track paths over time
+- **Size Evolution**: Displays how bounding box areas change during tracking
+- **Snapshot Views**: Visualizes measurements and tracks at specific time steps
+- **Interactive Prompts**: Optional visualization that can be enabled/disabled
 
 #### Test Scripts
 ```bash
@@ -111,7 +120,7 @@ jax_tracker/
 ├── kalman_filter_track.py          # Individual track implementation
 ├── measurement_preprocessing.py     # Sensor data handling
 ├── example_usage.py                # Usage examples
-├── example_bbox_tracking.py        # Bounding box tracking examples
+├── example_bbox_tracking.py        # Bounding box tracking examples with visualization
 ├── test_tracker.py                 # Basic tests
 ├── test_bbox_tracking.py           # Bounding box tracking tests
 ├── data_association/
