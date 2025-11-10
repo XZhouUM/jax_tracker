@@ -1,3 +1,5 @@
+[![Run Tests](https://github.com/XZhouUM/jax_tracker/actions/workflows/all_tests.yml/badge.svg)](https://github.com/XZhouUM/jax_tracker/actions/workflows/all_tests.yml)
+
 # Multi-Track Tracker in JAX
 
 A comprehensive multi-target tracking system implemented in JAX, featuring Kalman filter-based tracking with configurable data association algorithms, motion models, and measurement models.
