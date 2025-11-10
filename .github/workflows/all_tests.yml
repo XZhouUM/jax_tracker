@@ -1,0 +1,55 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.13]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run basic tracker tests
+      run: python test_tracker.py
+    
+    - name: Run MHT algorithm tests
+      run: python test_mht.py
+    
+    - name: Run JPDA algorithm tests
+      run: python test_jpda.py
+    
+    - name: Run bounding box tracking tests
+      run: python test_bbox_tracking.py
+    
+    - name: Test example scripts (basic validation)
+      run: |
+        # Test that example scripts can be imported without errors
+        python -c "import example_usage; print('example_usage.py imports successfully')"
+        python -c "import example_mht; print('example_mht.py imports successfully')"
+        python -c "import example_jpda; print('example_jpda.py imports successfully')"
+        python -c "import example_bbox_tracking; print('example_bbox_tracking.py imports successfully')"
